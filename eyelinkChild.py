@@ -104,6 +104,8 @@ qTo
 			self.imagebuffer = array.array('L')
 			self.pal = None
 			self.__img__ = None
+		def record_abort_hide(self):
+			pass
 		def play_beep(self,beepid):
 			if beepid == pylink.DC_TARG_BEEP or beepid == pylink.CAL_TARG_BEEP:
 				self.__target_beep__.play()

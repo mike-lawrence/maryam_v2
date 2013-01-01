@@ -610,9 +610,13 @@ if __name__ == '__main__':
 				message = eyelinkChild.qFrom.get()
 				if message=='calibrationComplete':
 					calibrationDone = True
+				elif (message=='setup_cal_display') or (message=='exit_cal_display'):
+					drawDot(fixationSize)
+					stimDisplay.refresh()
 				elif message=='erase_cal_target':
-					gl.glClearColor(0,0,0,1)
-					gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+					pass
+				elif message=='clear_cal_display':
+					stimDisplay.refresh()
 				elif message[0]=='draw_cal_target':
 					x = message[1]
 					y = message[2]
