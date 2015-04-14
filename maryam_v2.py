@@ -3,9 +3,9 @@
 # instructions
 # eyelinkchild edf
 # 3 practice
-# 8 regular
-# 2 practice
 # 7 regular
+# 2 practice
+# 8 regular
 # __
 # 20 total
 
@@ -20,7 +20,6 @@ if __name__ == '__main__':
 	stimDisplayWidth = 54.5 #units can be anything so long as they match those used in viewingDistance above
 	stimDisplayRes = (1920,1080) #pixel resolution of the stimDisplay
 	stimDisplayPosition = (-1440-1920,-30)
-	# stimDisplayPosition = (0,0)
 
 	writerWindowSize = (200,200)
 	writerWindowPosition = (300,0)
@@ -61,7 +60,7 @@ if __name__ == '__main__':
 	responseTimeout = 2.000
 	feedbackDuration = 1.000
 
-	numberOfBlocks = 3
+	numberOfBlocks = [7,8]
 	repsPerPractice = 4
 
 	instructionSizeInDegrees = .75 #specify the size of the instruction text
@@ -250,12 +249,16 @@ if __name__ == '__main__':
 			gl.glOrtho(0, stimDisplayRes[0],stimDisplayRes[1], 0, 0, 1)
 			gl.glMatrixMode(gl.GL_MODELVIEW)
 			gl.glDisable(gl.GL_DEPTH_TEST)
+			for i in range(10):
+				sdl2.SDL_PumpEvents()
 		def refresh(self,clearColor=[0,0,0,1]):
 			sdl2.SDL_GL_SwapWindow(self.Window.window)
 			gl.glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3])
 			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 		def hide(self):
 			sdl2.SDL_DestroyWindow(self.Window.window)
+			for i in range(10):
+				sdl2.SDL_PumpEvents()
 
 
 	stimDisplay = stimDisplayClass()
@@ -263,10 +266,6 @@ if __name__ == '__main__':
 	time.sleep(1) #give the other windows some time to initialize
 	stimDisplay.show(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
 	
-	#pump a few times to ensure the window is shown
-	for i in range(10):
-		sdl2.SDL_PumpEvents()
-
 
 	########
 	# Drawing functions
@@ -616,7 +615,7 @@ if __name__ == '__main__':
 		for thisTrialInfo in trialList:
 			#bump the trial number
 			trialNum = trialNum + 1
-			
+			print [block,trialNum]
 			#parse the trial info
 			ttoa , cueLocation , t1Identity , t2Location = thisTrialInfo
 			
@@ -667,9 +666,9 @@ if __name__ == '__main__':
 										message = eyelinkChild.qFrom.get()
 										if message=='calibrationComplete':
 											recalibrationDone = True
-								stimDisplay.show()
+								stimDisplay.show(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
 				eyelinkChild.qTo.put(['reportBlinks',True])
-				eyelinkChild.qTo.put(['reportSaccades',False])
+				eyelinkChild.qTo.put(['reportSaccades',True])
 				eyelinkChild.qTo.put(['sendMessage','trialStart\t'+trialDescrptor])
 
 			#prep and show the fixation twice (ensures 2nd refresh will block; for better trial start time accuracy)
@@ -805,7 +804,7 @@ if __name__ == '__main__':
 						t2On = True
 						if doEyelink:
 							eyelinkChild.qTo.put(['sendMessage','t2On\t'+trialDescrptor])
-							eyelinkChild.qTo.put(['reportSaccades',True])
+							# eyelinkChild.qTo.put(['reportSaccades',True])
 				elif getTime()>=responseTimeoutTime:
 						trialDone = True
 						if (t1Response=='NA') and not (t1Identity=='NA'):
@@ -926,7 +925,7 @@ if __name__ == '__main__':
 										message = eyelinkChild.qFrom.get()
 										if message=='calibrationComplete':
 											recalibrationDone = True
-								stimDisplay.show()
+								stimDisplay.show(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
 							else: #haven't done a recalibration
 								feedbackResponse = 'TRUE'
 								#update feedback
@@ -985,27 +984,30 @@ if __name__ == '__main__':
 
 	t2PracticeMessage = 'During this part of the experiment you will be staring at the grey dot and watching for dots that will appear. When a dot appears on the left, press the "'+t2ResponseKeys[0]+'" key.\nWhen a dot appears on the right, press the "'+t2ResponseKeys[1]+'" key.\n\nAfter you respond, you will see a number that tells you how quickly you responded; faster responses yield lower numbers. If you pressed the wrong key (for example, if the dot was on the right and you pressed the left key), then the number will have an "x" on either side. Try to respond as quickly as you can without making too many errors.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
 
-	bothPracticeMessage = 'During this part of the experiment you will be staring at the grey dot and listening for tones that will sound and also watching for dots that will appear. When you hear a low tone, press the "'+t1ResponseKeys[0]+'" key.\nWhen you hear a high tone, press the "'+t1ResponseKeys[1]+'" key.\n\nWhen a dot appears on the left, press the "'+t2ResponseKeys[0]+'" key.\nWhen a dot appears on the right, press the "'+t2ResponseKeys[1]+'" key.\n\nYou will receive feedback as before, this time with two numbers reflecting how quickly and accurately you responded to each target type (tone and dot), with the tone-related number appearing slightly above the dot-related number. Try to respond quickly to both target types without making too many errors on either target type.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
+	bothPracticeMessage1 = 'During this part of the experiment you will be staring at the grey dot and listening for tones that will sound and also watching for dots that will appear. When you hear a low tone, press the "'+t1ResponseKeys[0]+'" key.\nWhen you hear a high tone, press the "'+t1ResponseKeys[1]+'" key.\n\nWhen a dot appears on the left, press the "'+t2ResponseKeys[0]+'" key.\nWhen a dot appears on the right, press the "'+t2ResponseKeys[1]+'" key.\n\nTo continue to the next page of instructions, press any key.'
+	
+	bothPracticeMessage2 = 'You will receive feedback as before, this time with two numbers reflecting how quickly and accurately you responded to each target type (tone and dot), with the tone-related number appearing slightly above the dot-related number. Try to respond quickly to both target types without making too many errors on either target type.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
 
-	# if order=='1':
-	# 	messageViewingTime = showMessage(t1PracticeMessage)
-	# 	block = 't1Practice'
-	# 	runBlock(messageViewingTime)
+	if order=='1':
+		messageViewingTime = showMessage(t1PracticeMessage)
+		block = 't1Practice'
+		runBlock(messageViewingTime)
 
-	# 	messageViewingTime = showMessage(t2PracticeMessage)
-	# 	block = 't2Practice'
-	# 	runBlock(messageViewingTime)
-	# else:
-	# 	messageViewingTime = showMessage(t2PracticeMessage)
-	# 	block = 't2Practice'
-	# 	runBlock(messageViewingTime)
+		messageViewingTime = showMessage(t2PracticeMessage)
+		block = 't2Practice'
+		runBlock(messageViewingTime)
+	else:
+		messageViewingTime = showMessage(t2PracticeMessage)
+		block = 't2Practice'
+		runBlock(messageViewingTime)
 
-	# 	messageViewingTime = showMessage(t1PracticeMessage)
-	# 	block = 't1Practice'
-	# 	runBlock(messageViewingTime)
+		messageViewingTime = showMessage(t1PracticeMessage)
+		block = 't1Practice'
+		runBlock(messageViewingTime)
 
 
-	messageViewingTime = showMessage(bothPracticeMessage)
+	messageViewingTime = showMessage(bothPracticeMessage1)
+	messageViewingTime = showMessage(bothPracticeMessage2)
 	block = 'bothPractice'
 	runBlock(messageViewingTime)
 
@@ -1017,11 +1019,13 @@ if __name__ == '__main__':
 
 	bothResumeMessage = 'The experiment will now resume presenting both tones and dots.\n\nWhen you are ready to begin, press any key.'
 
-	for i in range(numberOfBlocks):
-		block = i + 1
-		runBlock(messageViewingTime)
-		if block<numberOfBlocks:
-			# messageViewingTime = showMessage('Take a break!\nYou\'re about '+str(block)+'/'+str(numberOfBlocks)+' done.\nWhen you are ready, press any key to continue the experiment.')
+	for i in range(len(numberOfBlocks)):
+		for j in range(numberOfBlocks[i]):
+			block = 1+j+j*i
+			runBlock(messageViewingTime)
+			if j<(numberOfBlocks[i]-1):
+				messageViewingTime = showMessage('Take a break!\n\nWhen you are ready to continue the experiment, press any key.')
+		if i<(len(numberOfBlocks)+1):
 			if order=='1':
 				messageViewingTime = showMessage(t1PracticeMessage2)
 				block = 't1Practice'
@@ -1038,8 +1042,6 @@ if __name__ == '__main__':
 				runBlock(messageViewingTime)
 			messageViewingTime = showMessage(bothResumeMessage)
 
-
-
-	messageViewingTime = showMessage('You\'re all done!\nPlease alert the person conducting this experiment that you have finished.')
+	messageViewingTime = showMessage('You\'re all done!\nPlease the person running this experiment will be with you shortly.')
 
 	exit_safely()

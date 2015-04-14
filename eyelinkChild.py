@@ -133,15 +133,15 @@ qTo
 		distFromFixation = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
 		if newGazeTarget:
 			if distFromFixation<gazeTargetCriterion:
-				#print ['gazeTargetMet',gazeTarget,distFromFixation,gazeTargetCriterion]
+				#print ['gazeTargetMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
 				qFrom.put(['gazeTargetMet',gazeTarget])
 				newGazeTarget = False
 			else:
 				qFrom.put(['gazeTargetNotMet',gazeTarget])
-				#print ['gazeTargetNotMet',gazeTarget,distFromFixation,gazeTargetCriterion]
+				#print ['gazeTargetNotMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
 		else:
 			if distFromFixation>gazeTargetCriterion:
-				#print ['gazeTargetLost',gazeTarget,distFromFixation,gazeTargetCriterion]
+				#print ['gazeTargetLost',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
 				if reportSaccades:
 					qFrom.put(['gazeTargetLost',gazeTarget])
 				if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
@@ -158,6 +158,7 @@ qTo
 	doSounds = False
 	reportSaccades = False
 	reportBlinks = False
+	lastMessageTime = time.time()
 	while True:
 		sdl2.SDL_PumpEvents()
 		for event in sdl2.ext.get_events():
@@ -183,6 +184,7 @@ qTo
 				gazeTarget = numpy.array(message[1])
 				gazeTargetCriterion = numpy.array(message[2])
 				#print message
+				#print 'waiting for gaze confirmation'
 			elif message[0]=='accept_trigger':
 				eyelink.accept_trigger()
 			elif message=='doCalibration':
