@@ -3,9 +3,9 @@
 # instructions
 # eyelinkchild edf
 # 3 practice
-# 7 regular
+# 5 regular
 # 2 practice
-# 8 regular
+# 6 regular
 # __
 # 20 total
 
@@ -16,10 +16,10 @@ if __name__ == '__main__':
 	#Important parameters
 	########
 
-	viewingDistance = 57.0 #units can be anything so long as they match those used in stimDisplayWidth below
+	viewingDistance = 95.0 #units can be anything so long as they match those used in stimDisplayWidth below
 	stimDisplayWidth = 54.5 #units can be anything so long as they match those used in viewingDistance above
 	stimDisplayRes = (1920,1080) #pixel resolution of the stimDisplay
-	stimDisplayPosition = (-1440-1920,-30)
+	stimDisplayPosition = (-1440-1920,1680-1080)
 
 	writerWindowSize = (200,200)
 	writerWindowPosition = (300,0)
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 	edfPath = './'
 	saccadeSoundFile = '_Stimuli/stop.wav'
 	blinkSoundFile = '_Stimuli/stop.wav'
-	calibrationDotSizeInDegrees = 1
+	calibrationDotSizeInDegrees = .5
 
 	hiSoundFile = './_Stimuli/hi.wav'
 	loSoundFile = './_Stimuli/lo.wav'
@@ -48,9 +48,9 @@ if __name__ == '__main__':
 	t2ResponseKeys = [',','.']
 
 	ttoaList = [0.150,0.350,0.900] 
-	cueLocationList = ['left','right'] #NA means no cue
+	cueLocationList = ['left','right','NA'] #NA means no cue
 	t1IdentityList = ['hi','lo','NA'] #NA means no T1
-	t2LocationList = ['left','right','NA'] #NA means no T2
+	t2LocationList = ['left','right'] #NA means no T2
 
 	fixationDuration = 1.000
 	cueTargetOA = 1.200
@@ -58,19 +58,19 @@ if __name__ == '__main__':
 	cueCuebackOA = 0.100
 	cuebackDuration = 0.050
 	responseTimeout = 2.000
-	feedbackDuration = 1.000
+	feedbackDuration = 2.000
 
-	numberOfBlocks = [7,8]
-	repsPerPractice = 4
+	numberOfBlocks = [5,6]
+	trialsPerPractice = 27
 
-	instructionSizeInDegrees = .75 #specify the size of the instruction text
-	feedbackSizeInDegrees = 1 #specify the size of the feedback text
-	fixationSizeInDegrees = .2
+	instructionSizeInDegrees = .5 #specify the size of the instruction text
+	feedbackSizeInDegrees = .5 #specify the size of the feedback text
+	fixationSizeInDegrees = .1
 	targetSizeInDegrees = 1 #specify the width of the target
 	targetOffsetInDegrees = 10 #specify the distance of the target to center
 	placeholderSizeInDegrees = 2
 	placeholderThicknessProportion = .8
-	gazeTargetCriterionInDegrees = 2
+	gazeTargetCriterionInDegrees = 1
 
 	textWidth = .9 #proportion of the stimDisplay to use when drawing instructions
 
@@ -79,7 +79,6 @@ if __name__ == '__main__':
 	# Import libraries
 	########
 	import sdl2 #for input and display
-	import sdl2.ext #for input and display
 	import sdl2.sdlmixer
 	import numpy #for image and display manipulation
 	import scipy.misc #for resizing numpy images via scipy.misc.imresize
@@ -105,6 +104,7 @@ if __name__ == '__main__':
 	except:
 		pass
 	import fileForker
+	byteify = lambda x, enc: x.encode(enc)
 
 	########
 	# Initialize audio and define a class for playing sounds
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 	sdl2.sdlmixer.Mix_OpenAudio(44100, sdl2.sdlmixer.MIX_DEFAULT_FORMAT, 2, 1024)
 	class Sound:
 		def __init__(self, fileName):
-			self.sample = sdl2.sdlmixer.Mix_LoadWAV(sdl2.ext.compat.byteify(fileName, "utf-8"))
+			self.sample = sdl2.sdlmixer.Mix_LoadWAV(byteify(fileName, "utf-8"))
 			self.started = False
 		def play(self):
 			self.channel = sdl2.sdlmixer.Mix_PlayChannel(-1, self.sample, 0)
@@ -191,6 +191,24 @@ if __name__ == '__main__':
 	instructionFont = ImageFont.truetype ("_Stimuli/DejaVuSans.ttf", instructionFontSize)
 	instructionHeight = instructionFont.getsize('XXX')[1]
 
+	########
+	# initialize the eyelink
+	########
+	if doEyelink:
+		eyelinkChild = fileForker.childClass(childFile='eyelinkChild.py')
+		eyelinkChild.initDict['windowSize'] = eyelinkWindowSize
+		eyelinkChild.initDict['windowPosition'] = eyelinkWindowPosition
+		eyelinkChild.initDict['stimDisplayPosition'] = stimDisplayPosition
+		eyelinkChild.initDict['stimDisplayRes'] = stimDisplayRes
+		eyelinkChild.initDict['calibrationDisplaySize'] = [int(targetOffset*2),int(targetOffset)]
+		eyelinkChild.initDict['calibrationDotSize'] = int(calibrationDotSize)
+		eyelinkChild.initDict['eyelinkIP'] = eyelinkIP
+		eyelinkChild.initDict['edfFileName'] = edfFileName
+		eyelinkChild.initDict['edfPath'] = edfPath
+		eyelinkChild.initDict['saccadeSoundFile'] = saccadeSoundFile
+		eyelinkChild.initDict['blinkSoundFile'] = blinkSoundFile
+		eyelinkChild.start()
+
 
 	########
 	# Initialize the writer
@@ -198,7 +216,38 @@ if __name__ == '__main__':
 	writerChild = fileForker.childClass(childFile='writerChild.py')
 	writerChild.initDict['windowSize'] = writerWindowSize
 	writerChild.initDict['windowPosition'] = writerWindowPosition
+	# time.sleep(2) #give the other windows some time to initialize
 	writerChild.start()
+
+	########
+	# Initialize the stimDisplay
+	########
+	class stimDisplayClass:
+		def __init__(self,stimDisplayRes,stimDisplayPosition):
+			sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
+			self.stimDisplayRes = stimDisplayRes
+			self.stimDisplayPosition = stimDisplayPosition
+			self.Window = sdl2.video.SDL_CreateWindow(byteify('stimDisplay', "utf-8"),self.stimDisplayPosition[0],self.stimDisplayPosition[1],self.stimDisplayRes[0],self.stimDisplayRes[1],sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_SHOWN | sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC)
+			self.glContext = sdl2.SDL_GL_CreateContext(self.Window)
+			gl.glMatrixMode(gl.GL_PROJECTION)
+			gl.glLoadIdentity()
+			gl.glOrtho(0, stimDisplayRes[0],stimDisplayRes[1], 0, 0, 1)
+			gl.glMatrixMode(gl.GL_MODELVIEW)
+			gl.glDisable(gl.GL_DEPTH_TEST)
+			start = time.time()
+			while time.time()<(start+2):
+				sdl2.SDL_PumpEvents()
+			self.refresh()
+			self.refresh()
+		def refresh(self,clearColor=[0,0,0,1]):
+			sdl2.SDL_GL_SwapWindow(self.Window)
+			gl.glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3])
+			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+
+
+	# time.sleep(2)
+	stimDisplay = stimDisplayClass(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
+
 
 	########
 	# start the event timestamper
@@ -208,64 +257,9 @@ if __name__ == '__main__':
 	stamperChild.initDict['windowPosition'] = stamperWindowPosition
 	stamperChild.initDict['windowColor'] = stamperWindowColor
 	stamperChild.initDict['doBorder'] = stamperDoBorder
+	# time.sleep(2) #give the other windows some time to initialize
 	stamperChild.start()
 
-	########
-	# initialize the eyelink
-	########
-	if doEyelink:
-		eyelinkChild = fileForker.childClass(childFile='eyelinkChild.py')
-		eyelinkChild.initDict['windowSize'] = eyelinkWindowSize
-		eyelinkChild.initDict['windowPosition'] = eyelinkWindowPosition
-		eyelinkChild.initDict['calibrationDisplayPosition'] = [ int(stimDisplayPosition[0] + stimDisplayRes[0]/2 - targetOffset) , int(stimDisplayPosition[1] + stimDisplayRes[1]/2 - targetOffset) ]
-		eyelinkChild.initDict['calibrationDisplayRes'] = [int(targetOffset*2),int(targetOffset*2)]
-		eyelinkChild.initDict['calibrationDotSize'] = int(calibrationDotSize)
-		eyelinkChild.initDict['eyelinkIP'] = eyelinkIP
-		eyelinkChild.initDict['edfFileName'] = edfFileName
-		eyelinkChild.initDict['edfPath'] = edfPath
-		eyelinkChild.initDict['saccadeSoundFile'] = saccadeSoundFile
-		eyelinkChild.initDict['blinkSoundFile'] = blinkSoundFile
-		eyelinkChild.start()
-		eyelinkChild.qTo.put('doCalibration')
-		done = False
-		while not done:
-			if not eyelinkChild.qFrom.empty():
-				message = eyelinkChild.qFrom.get()
-				if message=='calibrationComplete':
-					done = True
-
-	########
-	# Initialize the stimDisplay
-	########
-	class stimDisplayClass:
-		def __init__(self):
-			sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
-		def show(self,stimDisplayRes,stimDisplayPosition):
-			self.Window = sdl2.ext.Window("Experiment", size=stimDisplayRes,position=stimDisplayPosition,flags=sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_SHOWN | sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC)
-			# self.Window = sdl2.ext.Window("Experiment", size=stimDisplayRes,position=stimDisplayPosition,flags=sdl2.SDL_WINDOW_OPENGL|sdl2.SDL_WINDOW_SHOWN |sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC)
-			self.glContext = sdl2.SDL_GL_CreateContext(stimDisplay.Window.window)
-			gl.glMatrixMode(gl.GL_PROJECTION)
-			gl.glLoadIdentity()
-			gl.glOrtho(0, stimDisplayRes[0],stimDisplayRes[1], 0, 0, 1)
-			gl.glMatrixMode(gl.GL_MODELVIEW)
-			gl.glDisable(gl.GL_DEPTH_TEST)
-			for i in range(10):
-				sdl2.SDL_PumpEvents()
-		def refresh(self,clearColor=[0,0,0,1]):
-			sdl2.SDL_GL_SwapWindow(self.Window.window)
-			gl.glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3])
-			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-		def hide(self):
-			sdl2.SDL_DestroyWindow(self.Window.window)
-			for i in range(10):
-				sdl2.SDL_PumpEvents()
-
-
-	stimDisplay = stimDisplayClass()
-
-	time.sleep(1) #give the other windows some time to initialize
-	stimDisplay.show(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
-	
 
 	########
 	# Drawing functions
@@ -393,7 +387,6 @@ if __name__ == '__main__':
 			blitNumpy(feedbackArray,stimDisplayRes[0]/2,stimDisplayRes[1]/2+feedbackHeight,xCentered=True,yCentered=True)
 
 
-
 	def drawDot(size,xOffset=0):
 		gl.glColor3f(.5,.5,.5)
 		gl.glBegin(gl.GL_POLYGON)
@@ -414,15 +407,16 @@ if __name__ == '__main__':
 
 	
 	def drawPhotoStim():
-		gl.glColor3f(1,1,1)
-		gl.glBegin(gl.GL_QUAD_STRIP)
-		gl.glVertex2f( photoStimPosition[0] - photoStimSize[0]/2 , photoStimPosition[1] - photoStimSize[1]/2 )
-		gl.glVertex2f( photoStimPosition[0] - photoStimSize[0]/2 , photoStimPosition[1] + photoStimSize[1]/2 )
-		gl.glVertex2f( photoStimPosition[0] + photoStimSize[0]/2 , photoStimPosition[1] + photoStimSize[1]/2 )
-		gl.glVertex2f( photoStimPosition[0] + photoStimSize[0]/2 , photoStimPosition[1] - photoStimSize[1]/2 )
-		gl.glVertex2f( photoStimPosition[0] - photoStimSize[0]/2 , photoStimPosition[1] - photoStimSize[1]/2 )
-		gl.glEnd()
-		gl.glColor3f(0,0,0)
+		pass
+		# gl.glColor3f(1,1,1)
+		# gl.glBegin(gl.GL_QUAD_STRIP)
+		# gl.glVertex2f( photoStimPosition[0] - photoStimSize[0]/2 , photoStimPosition[1] - photoStimSize[1]/2 )
+		# gl.glVertex2f( photoStimPosition[0] - photoStimSize[0]/2 , photoStimPosition[1] + photoStimSize[1]/2 )
+		# gl.glVertex2f( photoStimPosition[0] + photoStimSize[0]/2 , photoStimPosition[1] + photoStimSize[1]/2 )
+		# gl.glVertex2f( photoStimPosition[0] + photoStimSize[0]/2 , photoStimPosition[1] - photoStimSize[1]/2 )
+		# gl.glVertex2f( photoStimPosition[0] - photoStimSize[0]/2 , photoStimPosition[1] - photoStimSize[1]/2 )
+		# gl.glEnd()
+		# gl.glColor3f(0,0,0)
 
 
 	########
@@ -449,7 +443,6 @@ if __name__ == '__main__':
 		stamperChild.stop(killAfter=60)
 		while stamperChild.isAlive():
 			time.sleep(.1)
-		sdl2.ext.quit()
 		sys.exit()
 
 
@@ -547,26 +540,28 @@ if __name__ == '__main__':
 	#define a function that generates a randomized list of trial-by-trial stimulus information representing a factorial combination of the independent variables.
 	def getT1PracticeTrials():
 		trials=[]
-		for rep in range(repsPerPractice):
-			for ttoa in ttoaList:
-				for cueLocation in cueLocationList:
-					for t1Identity in t1IdentityList:
-						if t1Identity!='NA':
-							t2Location = 'NA'
-							trials.append([ttoa,cueLocation,t1Identity,t2Location])
+		for ttoa in ttoaList:
+			for cueLocation in cueLocationList:
+				for t1Identity in t1IdentityList:
+					if t1Identity!='NA':
+						t2Location = 'NA'
+						trials.append([ttoa,cueLocation,t1Identity,t2Location])
 		random.shuffle(trials)
 		return trials
+
+
 	def getT2PracticeTrials():
 		trials=[]
-		for rep in range(repsPerPractice):
-			for ttoa in ttoaList:
-				for cueLocation in cueLocationList:
-					for t2Location in t2LocationList:
-						if t2Location!='NA':
-							t1Identity = 'NA'
-							trials.append([ttoa,cueLocation,t1Identity,t2Location])
+		for ttoa in ttoaList:
+			for cueLocation in cueLocationList:
+				for t2Location in t2LocationList:
+					if t2Location!='NA':
+						t1Identity = 'NA'
+						trials.append([ttoa,cueLocation,t1Identity,t2Location])
 		random.shuffle(trials)
 		return trials
+
+
 	def getTrials(includeT1=True,includeT2=True):
 		trials=[]
 		for ttoa in ttoaList:
@@ -579,6 +574,7 @@ if __name__ == '__main__':
 							trials.append([ttoa,cueLocation,t1Identity,t2Location])
 		random.shuffle(trials)
 		return trials
+
 
 	def checkResponses():
 		responses = []
@@ -593,8 +589,37 @@ if __name__ == '__main__':
 		return responses
 
 
+	def doCalibration():
+		drawDot(fixationSize)
+		stimDisplay.refresh()
+		eyelinkChild.qTo.put('doCalibration')
+		calibrationDone = False
+		while not calibrationDone:
+			if not eyelinkChild.qFrom.empty():
+				message = eyelinkChild.qFrom.get()
+				if message=='calibrationComplete':
+					calibrationDone = True
+				elif message=='erase_cal_target':
+					gl.glClearColor(0,0,0,1)
+					gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+				elif message[0]=='draw_cal_target':
+					x = message[1]
+					y = message[2]
+					gl.glColor3f(.5,.5,.5)
+					gl.glBegin(gl.GL_POLYGON)
+					for i in range(360):
+						gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/2.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/2.0))
+					gl.glEnd()
+					gl.glColor3f(0,0,0)
+					gl.glBegin(gl.GL_POLYGON)
+					for i in range(360):
+						gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/8.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/8.0))
+					gl.glEnd()
+					stimDisplay.refresh()
+
+
 	#define a function that runs a block of trials
-	def runBlock(messageViewingTime):
+	def runBlock(block,messageViewingTime):
 
 		start = getTime()
 		while (getTime()-start)<1:
@@ -607,6 +632,8 @@ if __name__ == '__main__':
 			trialList = getT1PracticeTrials()
 		elif block=='t2Practice':
 			trialList = getT2PracticeTrials()
+		elif block=='bothPractice':
+			trialList = getTrials()[0:trialsPerPractice]
 		else:
 			trialList = getTrials()
 		
@@ -634,8 +661,8 @@ if __name__ == '__main__':
 			drawDot(fixationSize)
 			stimDisplay.refresh()
 			if doEyelink: 
-				gazeTarget = [targetOffset,targetOffset]
-				eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion]) #calibration sees a window of 2*targetOffset wide, so [targetOffset,targetOffset] is center
+				gazeTarget = [stimDisplayRes[0]/2.0,stimDisplayRes[1]/2.0]
+				eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion])
 				waitingForGazeTarget = True
 				while waitingForGazeTarget:
 					if not eyelinkChild.qFrom.empty():
@@ -658,15 +685,13 @@ if __name__ == '__main__':
 							if key=='escape':
 								exitSafely()
 							if key=='p': #recalibration requested
-								stimDisplay.hide()
-								eyelinkChild.qTo.put('doCalibration')
-								recalibrationDone = False
-								while not recalibrationDone:
-									if not eyelinkChild.qFrom.empty():
-										message = eyelinkChild.qFrom.get()
-										if message=='calibrationComplete':
-											recalibrationDone = True
-								stimDisplay.show(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
+								doCalibration()
+								drawRing()
+								drawDot(fixationSize)
+								stimDisplay.refresh()
+								eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion]) #calibration sees a window of 2*targetOffset wide, so [targetOffset,targetOffset] is center
+							elif key=='q':
+								waitingForGazeTarget = False
 				eyelinkChild.qTo.put(['reportBlinks',True])
 				eyelinkChild.qTo.put(['reportSaccades',True])
 				eyelinkChild.qTo.put(['sendMessage','trialStart\t'+trialDescrptor])
@@ -917,15 +942,7 @@ if __name__ == '__main__':
 							elif key=='p' and doEyelink:
 								feedbackDone = True
 								recalibration = 'TRUE'
-								stimDisplay.hide()
-								eyelinkChild.qTo.put('doCalibration')
-								recalibrationDone = False
-								while not recalibrationDone:
-									if not eyelinkChild.qFrom.empty():
-										message = eyelinkChild.qFrom.get()
-										if message=='calibrationComplete':
-											recalibrationDone = True
-								stimDisplay.show(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
+								doCalibration()
 							else: #haven't done a recalibration
 								feedbackResponse = 'TRUE'
 								#update feedback
@@ -935,6 +952,8 @@ if __name__ == '__main__':
 			#write out trial info
 			dataToWrite = '\t'.join(map(str,[ subInfoForFile , messageViewingTime , block , trialNum , ttoa , cueLocation , t1Identity , t2Location , badKey , t1Response , t1RT , tooManyT1 , t1TooSoon , t1ResponseWhenT1Absent , t2Response , t2RT , tooManyT2 , t2TooSoon , t2ResponseWhenT2Absent , feedbackResponse , recalibration , blink , saccade]))
 			writerChild.qTo.put(['write','data',dataToWrite])
+			if (trialNum==27)&(len(trialList)>27):
+				messageViewingTime = showMessage('Take a break!\n\nWhen you are ready to continue the experiment, press any key.')
 		print 'on break'
 
 
@@ -942,6 +961,9 @@ if __name__ == '__main__':
 	########
 	# Initialize the data files
 	########
+
+	if doEyelink:
+		doCalibration()
 
 	#get subject info
 	subInfo = getSubInfo()
@@ -991,25 +1013,25 @@ if __name__ == '__main__':
 	if order=='1':
 		messageViewingTime = showMessage(t1PracticeMessage)
 		block = 't1Practice'
-		runBlock(messageViewingTime)
+		runBlock(block,messageViewingTime)
 
 		messageViewingTime = showMessage(t2PracticeMessage)
 		block = 't2Practice'
-		runBlock(messageViewingTime)
+		runBlock(block,messageViewingTime)
 	else:
 		messageViewingTime = showMessage(t2PracticeMessage)
 		block = 't2Practice'
-		runBlock(messageViewingTime)
+		runBlock(block,messageViewingTime)
 
 		messageViewingTime = showMessage(t1PracticeMessage)
 		block = 't1Practice'
-		runBlock(messageViewingTime)
+		runBlock(block,messageViewingTime)
 
 
 	messageViewingTime = showMessage(bothPracticeMessage1)
 	messageViewingTime = showMessage(bothPracticeMessage2)
 	block = 'bothPractice'
-	runBlock(messageViewingTime)
+	runBlock(block,messageViewingTime)
 
 	messageViewingTime = showMessage('You\'re all done practice.\n\nRemember to try to keep your eyes focused at the center of the screen. When you are ready to begin the experiment, press any key.')
 
@@ -1019,27 +1041,28 @@ if __name__ == '__main__':
 
 	bothResumeMessage = 'The experiment will now resume presenting both tones and dots.\n\nWhen you are ready to begin, press any key.'
 
+	blockNum = 0
 	for i in range(len(numberOfBlocks)):
 		for j in range(numberOfBlocks[i]):
-			block = 1+j+j*i
-			runBlock(messageViewingTime)
+			blockNum += 1
+			runBlock(blockNum,messageViewingTime)
 			if j<(numberOfBlocks[i]-1):
 				messageViewingTime = showMessage('Take a break!\n\nWhen you are ready to continue the experiment, press any key.')
-		if i<(len(numberOfBlocks)+1):
+		if i<(len(numberOfBlocks)-1):
 			if order=='1':
 				messageViewingTime = showMessage(t1PracticeMessage2)
 				block = 't1Practice'
-				runBlock(messageViewingTime)
+				runBlock(block,messageViewingTime)
 				messageViewingTime = showMessage(t2PracticeMessage2)
 				block = 't2Practice'
-				runBlock(messageViewingTime)
+				runBlock(block,messageViewingTime)
 			else:
 				messageViewingTime = showMessage(t2PracticeMessage2)
 				block = 't2Practice'
-				runBlock(messageViewingTime)
+				runBlock(block,messageViewingTime)
 				messageViewingTime = showMessage(t1PracticeMessage2)
 				block = 't1Practice'
-				runBlock(messageViewingTime)
+				runBlock(block,messageViewingTime)
 			messageViewingTime = showMessage(bothResumeMessage)
 
 	messageViewingTime = showMessage('You\'re all done!\nPlease the person running this experiment will be with you shortly.')
