@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	#Important parameters
 	########
 
-	viewingDistance = 95.0 #units can be anything so long as they match those used in stimDisplayWidth below
+	viewingDistance = 60.0 #units can be anything so long as they match those used in stimDisplayWidth below
 	stimDisplayWidth = 54.5 #units can be anything so long as they match those used in viewingDistance above
 	stimDisplayRes = (1920,1080) #pixel resolution of the stimDisplay
 	stimDisplayPosition = (-1440-1920,1680-1080)
@@ -67,10 +67,10 @@ if __name__ == '__main__':
 	feedbackSizeInDegrees = .5 #specify the size of the feedback text
 	fixationSizeInDegrees = .1
 	targetSizeInDegrees = 1 #specify the width of the target
-	targetOffsetInDegrees = 10 #specify the distance of the target to center
+	targetOffsetInDegrees = 8 #specify the distance of the target to center
 	placeholderSizeInDegrees = 2
 	placeholderThicknessProportion = .8
-	gazeTargetCriterionInDegrees = 1
+	gazeTargetCriterionInDegrees = 2
 
 	textWidth = .9 #proportion of the stimDisplay to use when drawing instructions
 

@@ -162,7 +162,7 @@ qTo
 			elif message[0]=='sendMessage':
 				eyelink.sendMessage(message[1])
 			elif message[0]=='newGazeTarget':
-				print message
+				# print message
 				newGazeTarget = True
 				gazeTarget = numpy.array(message[1])
 				gazeTargetCriterion = numpy.array(message[2])
@@ -188,15 +188,15 @@ qTo
 				distFromFixation = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
 				if newGazeTarget:
 					if distFromFixation<gazeTargetCriterion:
-						print ['gazeTargetMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
+						# print ['gazeTargetMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
 						qFrom.put(['gazeTargetMet',gazeTarget])
 						newGazeTarget = False
 					else:
 						qFrom.put(['gazeTargetNotMet',gazeTarget])
-						print ['gazeTargetNotMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
+						# print ['gazeTargetNotMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
 				else:
 					if distFromFixation>gazeTargetCriterion:
-						print ['gazeTargetLost',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
+						# print ['gazeTargetLost',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
 						if reportSaccades:
 							qFrom.put(['gazeTargetLost',gazeTarget])
 						if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
@@ -205,7 +205,7 @@ qTo
 			elif eyeData==pylink.STARTBLINK:
 				if reportBlinks:
 					qFrom.put('blink')
-				#print 'blink'
+				# print 'blink'
 				if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 					if doSounds:
 						#blinkSound.play()
