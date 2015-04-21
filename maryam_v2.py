@@ -47,7 +47,7 @@ if __name__ == '__main__':
 	t1ResponseKeys = ['z','a']
 	t2ResponseKeys = [',','.']
 
-	ttoaList = [0.150,0.350,0.900] 
+	ttoaList = [0.150,0.350,0.800] 
 	cueLocationList = ['left','right','NA'] #NA means no cue
 	t1IdentityList = ['hi','lo','NA'] #NA means no T1
 	t2LocationList = ['left','right'] #NA means no T2
@@ -55,13 +55,14 @@ if __name__ == '__main__':
 	fixationDuration = 1.000
 	cueTargetOA = 1.200
 	cueDuration = 0.050
-	cueCuebackOA = 0.100
+	cueCuebackOA = 0.200
 	cuebackDuration = 0.050
 	responseTimeout = 2.000
 	feedbackDuration = 2.000
 
 	numberOfBlocks = [5,6]
-	trialsPerPractice = 27
+	repsPerSoloPractice = 2
+	trialsPerBothPractice = 36
 
 	instructionSizeInDegrees = .5 #specify the size of the instruction text
 	feedbackSizeInDegrees = .5 #specify the size of the feedback text
@@ -540,24 +541,26 @@ if __name__ == '__main__':
 	#define a function that generates a randomized list of trial-by-trial stimulus information representing a factorial combination of the independent variables.
 	def getT1PracticeTrials():
 		trials=[]
-		for ttoa in ttoaList:
-			for cueLocation in cueLocationList:
-				for t1Identity in t1IdentityList:
-					if t1Identity!='NA':
-						t2Location = 'NA'
-						trials.append([ttoa,cueLocation,t1Identity,t2Location])
+		for rep in range(repsPerSoloPractice):
+			for ttoa in ttoaList:
+				for cueLocation in cueLocationList:
+					for t1Identity in t1IdentityList:
+						if t1Identity!='NA':
+							t2Location = 'NA'
+							trials.append([ttoa,cueLocation,t1Identity,t2Location])
 		random.shuffle(trials)
 		return trials
 
 
 	def getT2PracticeTrials():
 		trials=[]
-		for ttoa in ttoaList:
-			for cueLocation in cueLocationList:
-				for t2Location in t2LocationList:
-					if t2Location!='NA':
-						t1Identity = 'NA'
-						trials.append([ttoa,cueLocation,t1Identity,t2Location])
+		for rep in range(repsPerSoloPractice):
+			for ttoa in ttoaList:
+				for cueLocation in cueLocationList:
+					for t2Location in t2LocationList:
+						if t2Location!='NA':
+							t1Identity = 'NA'
+							trials.append([ttoa,cueLocation,t1Identity,t2Location])
 		random.shuffle(trials)
 		return trials
 
@@ -633,7 +636,7 @@ if __name__ == '__main__':
 		elif block=='t2Practice':
 			trialList = getT2PracticeTrials()
 		elif block=='bothPractice':
-			trialList = getTrials()[0:trialsPerPractice]
+			trialList = getTrials()[0:trialsPerBothPractice]
 		else:
 			trialList = getTrials()
 		
