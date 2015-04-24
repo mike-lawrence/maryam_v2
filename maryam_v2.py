@@ -217,14 +217,25 @@ if __name__ == '__main__':
 	writerChild = fileForker.childClass(childFile='writerChild.py')
 	writerChild.initDict['windowSize'] = writerWindowSize
 	writerChild.initDict['windowPosition'] = writerWindowPosition
-	# time.sleep(2) #give the other windows some time to initialize
+	time.sleep(1) #give the other windows some time to initialize
 	writerChild.start()
+
+	########
+	# Initialize the stimDisplayMirrorChild
+	########
+	stimDisplayMirrorChild = fileForker.childClass(childFile='stimDisplayMirrorChild.py')
+	stimDisplayMirrorChild.initDict['windowSize'] = [stimDisplayRes[0]/2,stimDisplayRes[1]/2]
+	stimDisplayMirrorChild.initDict['windowPosition'] = [0,0]
+	time.sleep(1) #give the other windows some time to initialize
+	stimDisplayMirrorChild.start()
 
 	########
 	# Initialize the stimDisplay
 	########
 	class stimDisplayClass:
-		def __init__(self,stimDisplayRes,stimDisplayPosition):
+		def __init__(self,stimDisplayRes,stimDisplayPosition,stimDisplayMirrorChild):
+			self.stimDisplayRes = stimDisplayRes
+			self.stimDisplayMirrorChild = stimDisplayMirrorChild
 			sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
 			self.stimDisplayRes = stimDisplayRes
 			self.stimDisplayPosition = stimDisplayPosition
@@ -242,11 +253,12 @@ if __name__ == '__main__':
 			self.refresh()
 		def refresh(self,clearColor=[0,0,0,1]):
 			sdl2.SDL_GL_SwapWindow(self.Window)
+			self.stimDisplayMirrorChild.qTo.put(['frame',self.stimDisplayRes,gl.glReadPixels(0, 0, self.stimDisplayRes[0], self.stimDisplayRes[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)])
 			gl.glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3])
 			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
 
-	# time.sleep(2)
+	time.sleep(1)
 	stimDisplay = stimDisplayClass(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
 
 
@@ -258,7 +270,6 @@ if __name__ == '__main__':
 	stamperChild.initDict['windowPosition'] = stamperWindowPosition
 	stamperChild.initDict['windowColor'] = stamperWindowColor
 	stamperChild.initDict['doBorder'] = stamperDoBorder
-	# time.sleep(2) #give the other windows some time to initialize
 	stamperChild.start()
 
 
