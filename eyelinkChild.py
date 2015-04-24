@@ -160,6 +160,9 @@ qTo
 			if line == totlines:
 				img = Image.new('RGBX',self.img_size)
 				img.fromstring(self.imagebuffer.tostring())
+				self.__img__ = img
+				self.draw_cross_hair()
+				self.__img__ = None
 				qFrom.put(['image',img])
 				self.imagebuffer = array.array('l')
 		def getColorFromIndex(self,colorindex):
