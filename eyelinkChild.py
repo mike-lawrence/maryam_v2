@@ -103,6 +103,7 @@ qTo
 				self.byteorder = 0
 			self.imagebuffer = array.array('L')
 			self.pal = None
+			self.__img__ = None
 		def play_beep(self,beepid):
 			if beepid == pylink.DC_TARG_BEEP or beepid == pylink.CAL_TARG_BEEP:
 				self.__target_beep__.play()
@@ -131,6 +132,24 @@ qTo
 		def setup_image_display(self, width, height):
 			print 'eyelink: setup_image_display'
 			self.img_size = (width,height)
+		def exit_image_display(self):
+			pass
+		def image_title(self,text):
+			pass
+		def set_image_palette(self, r,g,b):
+			self.imagebuffer = array.array('L')
+			sz = len(r)
+			i = 0
+			self.pal = []
+			while i < sz:
+				rf = int(b[i])
+				gf = int(g[i])
+				bf = int(r[i])
+				if self.byteorder:
+					self.pal.append((rf<<16) | (gf<<8) | (bf))
+				else:
+					self.pal.append((bf<<24) |  (gf<<16) | (rf<<8)) #for mac
+				i = i+1
 		def draw_image_line(self, width, line, totlines,buff):
 			i = 0
 			while i < width:
@@ -143,6 +162,35 @@ qTo
 				img.fromstring(self.imagebuffer.tostring())
 				qFrom.put(['image',img])
 				self.imagebuffer = array.array('l')
+		def getColorFromIndex(self,colorindex):
+			if colorindex   ==  pylink.CR_HAIR_COLOR:          return (255,255,255,255)
+			elif colorindex ==  pylink.PUPIL_HAIR_COLOR:       return (255,255,255,255)
+			elif colorindex ==  pylink.PUPIL_BOX_COLOR:        return (0,255,0,255)
+			elif colorindex ==  pylink.SEARCH_LIMIT_BOX_COLOR: return (255,0,0,255)
+			elif colorindex ==  pylink.MOUSE_CURSOR_COLOR:     return (255,0,0,255)
+			else: return (0,0,0,0)
+
+		def draw_line(self,x1,y1,x2,y2,colorindex):
+			imr = self.__img__.size
+			x1 = int((float(x1)/float(self.img_size[0]))*imr[0])
+			x2 = int((float(x2)/float(self.img_size[0]))*imr[0])
+			y1 = int((float(y1)/float(self.img_size[1]))*imr[1])
+			y2 = int((float(y2)/float(self.img_size[1]))*imr[1])
+			color = self.getColorFromIndex(colorindex)
+			qFrom.put(['line',x1,y1,x2,y2, color])
+		def draw_lozenge(self,x,y,width,height,colorindex):
+			color = self.getColorFromIndex(colorindex)
+			imr = self.__img__.size
+			x=int((float(x)/float(self.img_size[0]))*imr[0])
+			width=int((float(width)/float(self.img_size[0]))*imr[0])
+			y=int((float(y)/float(self.img_size[1]))*imr[1])
+			height=int((float(height)/float(self.img_size[1]))*imr[1])
+			qFrom.put(['losenge',x,y,width,height,color])
+		def get_mouse_state(self):
+			pos = pygame.mouse.get_pos()
+			state = pygame.mouse.get_pressed()
+			return (pos,state[0])
+
 	customDisplay = EyeLinkCoreGraphicsPySDL2()
 	pylink.openGraphicsEx(customDisplay)
 	eyeUsed = eyelink.eyeAvailable()

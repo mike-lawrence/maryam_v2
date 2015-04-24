@@ -635,6 +635,54 @@ if __name__ == '__main__':
 				elif message[0]=='image':
 					blitNumpy(message[1],stimDisplayRes[0]/2,stimDisplayRes[1]/2,xCentered=True,yCentered=True)
 					stimDisplay.refresh()
+				elif message[0]=='line':
+					junk,x1,y1,x2,y2,color = message
+					gl.glColor3ub(color[0],color[1],color[2])
+					gl.glBegin(gl.GL_LINES)
+					gl.glVertex3f(x1,y1)
+					gl.glVertex3f(x2,y2)
+					gl.glEnd()
+				elif message[0]=='losenge':
+					junk,x,y,width,height,color = message
+					gl.glColor3ub(color[0],color[1],color[2])
+					if width>height:
+						rad = height/2
+						gl.glBegin(gl.GL_LINES)
+						gl.glVertex3f(x+rad,y)
+						gl.glVertex3f(x+width-rad,y)
+						gl.glEnd()
+						gl.glBegin(gl.GL_LINES)
+						gl.glVertex3f(x+rad,y+height)
+						gl.glVertex3f(x+width-rad,y+height)
+						gl.glEnd()
+						gl.glBegin(gl.GL_POLYGON)
+						for i in range(360):
+							gl.glVertex2f( x + math.sin(i*math.pi/180)*height , y + math.cos(i*math.pi/180)*height )
+						gl.glEnd()
+						gl.glBegin(gl.GL_POLYGON)
+						for i in range(360):
+							gl.glVertex2f( x+width-height + math.sin(i*math.pi/180)*width , y + math.cos(i*math.pi/180)*height )
+						gl.glEnd()
+					else:
+						rad = width/2
+						gl.glBegin(gl.GL_LINES)
+						gl.glVertex3f(x,y+rad)
+						gl.glVertex3f(x,y+height-rad)
+						gl.glEnd()
+						gl.glBegin(gl.GL_LINES)
+						gl.glVertex3f(x+width,y+rad)
+						gl.glVertex3f(x+width,y+height-rad)
+						gl.glEnd()
+						gl.glBegin(gl.GL_POLYGON)
+						for i in range(360):
+							gl.glVertex2f( x + math.sin(i*math.pi/180)*width , y + math.cos(i*math.pi/180)*width )
+						gl.glEnd()
+						gl.glBegin(gl.GL_POLYGON)
+						for i in range(360):
+							gl.glVertex2f( x + math.sin(i*math.pi/180)*width , y+height-width + math.cos(i*math.pi/180)*height )
+						gl.glEnd()
+
+
 
 	#define a function that runs a block of trials
 	def runBlock(block,messageViewingTime):
