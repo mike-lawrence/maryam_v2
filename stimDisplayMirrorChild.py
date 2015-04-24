@@ -1,7 +1,7 @@
 def stimDisplayMirrorChildFunction(
 qTo
 ,qFrom
-, windowSize = [1920/2.0,1080/2.0]
+, windowSize = [1920/2,1080/2]
 , windowPosition = [0,0]
 ):
 	import sdl2
@@ -36,11 +36,14 @@ qTo
 			if message=='quit':
 				exitSafely()
 			elif message[0]=='frame':
+				# print ['q',time.time()-message[3]] #time spent in queue
 				res = message[1]
 				buffer = message[2]
 				image = Image.fromstring(mode="RGB", size=res, data=buffer)
-				image = image.transpose(Image.FLIP_TOP_BOTTOM)
-				image = image.thumbnail([res[0]/2,res[1]/2],Image.NEAREST)
+				image = image.transpose(Image.ROTATE_270)
+				# start = time.time()
+				# image.thumbnail([res[1]/2,res[0]/2],Image.LANCZOS)
+				# print ['resize',time.time()-start]
 				windowArray[:,:,0:3] = image
 				window.refresh()
 		sdl2.SDL_PumpEvents()

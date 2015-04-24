@@ -22,17 +22,17 @@ if __name__ == '__main__':
 	stimDisplayPosition = (-1440-1920,1680-1080)
 
 	writerWindowSize = (200,200)
-	writerWindowPosition = (300,0)
+	writerWindowPosition = (-1440+200,0)
 
 	stamperWindowSize = (200,200)
-	stamperWindowPosition = (0,0)
+	stamperWindowPosition = (-1440,0)
 	stamperWindowColor = [255,255,255]
 	stamperDoBorder = True
 
 	photoStimSize = [20,20]
 	photoStimPosition = [1920-photoStimSize[0]/2,1080-photoStimSize[1]/2]
 
-	doEyelink = True
+	doEyelink = False
 	eyelinkWindowSize = (200,200)
 	eyelinkWindowPosition = (700,0)
 	eyelinkIP = '100.1.1.1'
@@ -224,8 +224,8 @@ if __name__ == '__main__':
 	# Initialize the stimDisplayMirrorChild
 	########
 	stimDisplayMirrorChild = fileForker.childClass(childFile='stimDisplayMirrorChild.py')
-	stimDisplayMirrorChild.initDict['windowSize'] = [stimDisplayRes[0]/2,stimDisplayRes[1]/2]
-	stimDisplayMirrorChild.initDict['windowPosition'] = [0,0]
+	stimDisplayMirrorChild.initDict['windowSize'] = [1920,1080]#[stimDisplayRes[0]/2,stimDisplayRes[1]/2]
+	stimDisplayMirrorChild.initDict['windowPosition'] = [-1440,1680-1080]
 	time.sleep(1) #give the other windows some time to initialize
 	stimDisplayMirrorChild.start()
 
@@ -246,6 +246,7 @@ if __name__ == '__main__':
 			gl.glOrtho(0, stimDisplayRes[0],stimDisplayRes[1], 0, 0, 1)
 			gl.glMatrixMode(gl.GL_MODELVIEW)
 			gl.glDisable(gl.GL_DEPTH_TEST)
+			gl.glReadBuffer(gl.GL_FRONT)
 			start = time.time()
 			while time.time()<(start+2):
 				sdl2.SDL_PumpEvents()
@@ -253,13 +254,13 @@ if __name__ == '__main__':
 			self.refresh()
 		def refresh(self,clearColor=[0,0,0,1]):
 			sdl2.SDL_GL_SwapWindow(self.Window)
-			self.stimDisplayMirrorChild.qTo.put(['frame',self.stimDisplayRes,gl.glReadPixels(0, 0, self.stimDisplayRes[0], self.stimDisplayRes[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)])
+			self.stimDisplayMirrorChild.qTo.put(['frame',self.stimDisplayRes,gl.glReadPixels(0, 0, self.stimDisplayRes[0], self.stimDisplayRes[1], gl.GL_BGR, gl.GL_UNSIGNED_BYTE)])
 			gl.glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3])
 			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
 
 	time.sleep(1)
-	stimDisplay = stimDisplayClass(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)
+	stimDisplay = stimDisplayClass(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition,stimDisplayMirrorChild=stimDisplayMirrorChild)
 
 
 	########
@@ -449,6 +450,7 @@ if __name__ == '__main__':
 
 	#define a function that will kill everything safely
 	def exitSafely():
+		stimDisplayMirrorChild.stop()
 		writerChild.stop()
 		if doEyelink:
 			eyelinkChild.stop()
