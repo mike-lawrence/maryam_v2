@@ -97,7 +97,12 @@ qTo
 			self.__target_beep__ = Sound('_Stimuli/type.wav')
 			self.__target_beep__done__ = Sound('qbeep.wav')
 			self.__target_beep__error__ = Sound('error.wav')
-			# print 'eyelink display initialized'
+			if sys.byteorder == 'little':
+				self.byteorder = 1
+			else:
+				self.byteorder = 0
+			self.imagebuffer = array.array('L')
+			self.pal = None
 		def play_beep(self,beepid):
 			if beepid == pylink.DC_TARG_BEEP or beepid == pylink.CAL_TARG_BEEP:
 				self.__target_beep__.play()
@@ -105,12 +110,6 @@ qTo
 				self.__target_beep__error__.play()
 			else:#	CAL_GOOD_BEEP or DC_GOOD_BEEP
 				self.__target_beep__done__.play()
-		# def setup_image_display(self, width, height):
-		# 	# print 'eyelink: image display initializing'
-		# 	# print 'eyelink: image display initialized'
-		# def exit_image_display(self):
-		# 	# print 'eyelink: image display exiting'
-		# 	# print 'eyelink: image display exited'
 		def clear_cal_display(self):
 			qFrom.put('clear_cal_display')
 			# print 'clear_cal_display'
@@ -129,8 +128,21 @@ qTo
 		def get_input_key(self):
 			sdl2.SDL_PumpEvents()
 			return None
-
-
+		def setup_image_display(self, width, height):
+			print 'eyelink: setup_image_display'
+			self.img_size = (width,height)
+		def draw_image_line(self, width, line, totlines,buff):
+			i = 0
+			while i < width:
+				if buff[i] > len(self.pal):
+					buff[i] = len(self.pal) - 1
+				self.imagebuffer.append(self.pal[buff[i]&0x000000FF])
+				i += 1
+			if line == totlines:
+				img = Image.new('RGBX',self.img_size)
+				img.fromstring(self.imagebuffer.tostring())
+				qFrom.put(['image',img])
+				self.imagebuffer = array.array('l')
 	customDisplay = EyeLinkCoreGraphicsPySDL2()
 	pylink.openGraphicsEx(customDisplay)
 	eyeUsed = eyelink.eyeAvailable()

@@ -632,7 +632,9 @@ if __name__ == '__main__':
 						gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/8.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/8.0))
 					gl.glEnd()
 					stimDisplay.refresh()
-
+				elif message[0]=='image':
+					blitNumpy(message[1],stimDisplayRes[0]/2,stimDisplayRes[1]/2,xCentered=True,yCentered=True)
+					stimDisplay.refresh()
 
 	#define a function that runs a block of trials
 	def runBlock(block,messageViewingTime):
