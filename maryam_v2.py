@@ -1,16 +1,3 @@
-#todo:
-# kill trial if blink or saccade 
-# instructions
-# eyelinkchild edf
-# 3 practice
-# 5 regular
-# 2 practice
-# 6 regular
-# __
-# 20 total
-
-
-
 if __name__ == '__main__':
 	########
 	#Important parameters
@@ -611,6 +598,14 @@ if __name__ == '__main__':
 		eyelinkChild.qTo.put('doCalibration')
 		calibrationDone = False
 		while not calibrationDone:
+			if not stamperChild.qFrom.empty():
+				event = stamperChild.qFrom.get()
+				if event['type'] == 'key' :
+					key = event['value']
+					if key=='escape':
+						exitSafely()
+					else: #pass keys to eyelink
+						eyelinkChild.qTo.put(['keycode',key])
 			if not eyelinkChild.qFrom.empty():
 				message = eyelinkChild.qFrom.get()
 				if message=='calibrationComplete':

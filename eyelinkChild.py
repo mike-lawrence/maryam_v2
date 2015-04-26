@@ -126,9 +126,6 @@ qTo
 		def draw_cal_target(self, x, y):
 			qFrom.put(['draw_cal_target',x,y])
 			# print 'draw_cal_target'
-		def get_input_key(self):
-			sdl2.SDL_PumpEvents()
-			return None
 		def setup_image_display(self, width, height):
 			print 'eyelink: setup_image_display'
 			self.img_size = (width,height)
@@ -161,7 +158,7 @@ qTo
 				img = Image.new('RGBX',self.img_size)
 				img.fromstring(self.imagebuffer.tostring())
 				self.__img__ = img
-				self.draw_cross_hair()
+				self.draw_cross_hair() #inherited method!
 				self.__img__ = None
 				qFrom.put(['image',img])
 				self.imagebuffer = array.array('l')
@@ -172,7 +169,6 @@ qTo
 			elif colorindex ==  pylink.SEARCH_LIMIT_BOX_COLOR: return (255,0,0,255)
 			elif colorindex ==  pylink.MOUSE_CURSOR_COLOR:     return (255,0,0,255)
 			else: return (0,0,0,0)
-
 		def draw_line(self,x1,y1,x2,y2,colorindex):
 			imr = self.__img__.size
 			x1 = int((float(x1)/float(self.img_size[0]))*imr[0])
@@ -193,6 +189,37 @@ qTo
 			pos = pygame.mouse.get_pos()
 			state = pygame.mouse.get_pressed()
 			return (pos,state[0])
+		def get_input_key(self):
+			ky=[]
+			while not qTo.empty():
+				message = qTo.get()
+				if message=='quit':
+					exitSafely()
+				elif message[0]=='keycode':
+					key = message[1]
+					if key == 'f1':           keycode = pylink.F1_KEY
+					elif key == 'f2':         keycode = pylink.F2_KEY
+					elif key == 'f3':         keycode = pylink.F3_KEY
+					elif key == 'f4':         keycode = pylink.F4_KEY
+					elif key == 'f5':         keycode = pylink.F5_KEY
+					elif key == 'f6':         keycode = pylink.F6_KEY
+					elif key == 'f7':         keycode = pylink.F7_KEY
+					elif key == 'f8':         keycode = pylink.F8_KEY
+					elif key == 'f9':         keycode = pylink.F9_KEY
+					elif key == 'f10':        keycode = pylink.F10_KEY
+					elif key == 'pageup':     keycode = pylink.PAGE_UP
+					elif key == 'pagedown':   keycode = pylink.PAGE_DOWN
+					elif key == 'up':         keycode = pylink.CURS_UP
+					elif key == 'down':       keycode = pylink.CURS_DOWN
+					elif key == 'left':       keycode = pylink.CURS_LEFT
+					elif key == 'right':      keycode = pylink.CURS_RIGHT
+					elif key == 'backspace':  keycode = ord('\b')
+					elif key == 'return':     keycode = pylink.ENTER_KEY
+					elif key == 'escape':     keycode = pylink.ESC_KEY
+					elif key == 'tab':        keycode = ord('\t')
+					else:                     keycode = 0
+					ky.append(pylink.KeyInput(keycode))
+			return ky
 
 	customDisplay = EyeLinkCoreGraphicsPySDL2()
 	pylink.openGraphicsEx(customDisplay)
