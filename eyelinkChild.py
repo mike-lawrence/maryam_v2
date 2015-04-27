@@ -25,6 +25,9 @@ qTo
 	import subprocess
 	import time
 	import os
+	import array
+	from PIL import Image
+	from PIL import ImageDraw
 	try:
 		import appnope
 		appnope.nope()
@@ -82,7 +85,19 @@ qTo
 
 
 	edfPath = './_Data/temp.edf' #temporary default location, to be changed later when ID is established
-	eyelink = pylink.EyeLink(eyelinkIP)
+	done = False
+	while not done:
+		try:
+			print '\nAttempting to connect to eyelink (check that wifi is off!)'
+			eyelink = pylink.EyeLink(eyelinkIP)
+			done = True
+		except:
+			while not qTo.empty():
+				message = qTo.get()
+				if message=='quit':
+					exitSafely()
+
+	print 'Eyelink connected'
 	eyelink.sendCommand('select_parser_configuration 0')# 0--> standard (cognitive); 1--> sensitive (psychophysical)
 	eyelink.sendCommand('sample_rate 250')
 	eyelink.setLinkEventFilter("SACCADE,BLINK,LEFT,RIGHT")
@@ -114,28 +129,31 @@ qTo
 			else:#	CAL_GOOD_BEEP or DC_GOOD_BEEP
 				self.__target_beep__done__.play()
 		def clear_cal_display(self):
+			print 'clear_cal_display'
 			qFrom.put('clear_cal_display')
-			# print 'clear_cal_display'
 		def setup_cal_display(self):
+			print 'setup_cal_display'
 			qFrom.put('setup_cal_display')
-			# print 'setup_cal_display'
 		def exit_cal_display(self): 
+			print 'exit_cal_display'
 			qFrom.put('exit_cal_display')
-			# print 'exit_cal_display'
 		def erase_cal_target(self):
+			print 'erase_cal_target'
 			qFrom.put('erase_cal_target')
-			# print 'erase_cal_target'
 		def draw_cal_target(self, x, y):
+			print 'draw_cal_target'
 			qFrom.put(['draw_cal_target',x,y])
-			# print 'draw_cal_target'
 		def setup_image_display(self, width, height):
 			print 'eyelink: setup_image_display'
 			self.img_size = (width,height)
 		def exit_image_display(self):
+			print 'eyelink: exit_image_display'
 			pass
 		def image_title(self,text):
+			print 'eyelink: image_title'
 			pass
 		def set_image_palette(self, r,g,b):
+			print 'eyelink: set_image_palette'
 			self.imagebuffer = array.array('L')
 			sz = len(r)
 			i = 0
@@ -150,19 +168,24 @@ qTo
 					self.pal.append((bf<<24) |  (gf<<16) | (rf<<8)) #for mac
 				i = i+1
 		def draw_image_line(self, width, line, totlines,buff):
+			print 'eyelink: draw_image_line'
+			print [width, line, totlines,buff]
 			i = 0
 			while i < width:
-				if buff[i] > len(self.pal):
-					buff[i] = len(self.pal) - 1
+				if buff[i]>=len(self.pal):
+					buff[i] = len(self.pal)-1
 				self.imagebuffer.append(self.pal[buff[i]&0x000000FF])
-				i += 1
+				i = i+1
 			if line == totlines:
-				img = Image.new('RGBX',self.img_size)
-				img.fromstring(self.imagebuffer.tostring())
+				img = Image.fromstring('RGBX', (width,totlines), self.imagebuffer.tostring())
+ 				img = img.convert('RGBA')
 				self.__img__ = img
-				self.draw_cross_hair() #inherited method!
+				self.__draw__ = ImageDraw.Draw(self.__img__)
+				self.draw_cross_hair() #inherited method, calls draw_line and draw_losenge
+				self.__img__.save('temp.png')
 				self.__img__ = None
-				qFrom.put(['image',img])
+				self.__draw__ = None
+				qFrom.put(['image',numpy.array(img)])
 				self.imagebuffer = array.array('l')
 		def getColorFromIndex(self,colorindex):
 			if colorindex   ==  pylink.CR_HAIR_COLOR:          return (255,255,255,255)
@@ -172,25 +195,51 @@ qTo
 			elif colorindex ==  pylink.MOUSE_CURSOR_COLOR:     return (255,0,0,255)
 			else: return (0,0,0,0)
 		def draw_line(self,x1,y1,x2,y2,colorindex):
+			print 'eyelink: draw_line'
+			if x1<0: x1 = 0
+			if x2<0: x2 = 0
+			if y1<0: y1 = 0
+			if y2<0: y2 = 0
+			if x1>self.img_size[0]: x1 = self.img_size[0]
+			if x2>self.img_size[0]: x2 = self.img_size[0]
+			if y1>self.img_size[1]: y1 = self.img_size[1]
+			if y2>self.img_size[1]: y2 = self.img_size[1]
 			imr = self.__img__.size
 			x1 = int((float(x1)/float(self.img_size[0]))*imr[0])
 			x2 = int((float(x2)/float(self.img_size[0]))*imr[0])
 			y1 = int((float(y1)/float(self.img_size[1]))*imr[1])
 			y2 = int((float(y2)/float(self.img_size[1]))*imr[1])
 			color = self.getColorFromIndex(colorindex)
-			qFrom.put(['line',x1,y1,x2,y2, color])
+			self.__draw__.line( [(x1,y1),(x2,y2)] , fill=color)
 		def draw_lozenge(self,x,y,width,height,colorindex):
+			print 'eyelink: draw_lozenge'
 			color = self.getColorFromIndex(colorindex)
 			imr = self.__img__.size
 			x=int((float(x)/float(self.img_size[0]))*imr[0])
 			width=int((float(width)/float(self.img_size[0]))*imr[0])
 			y=int((float(y)/float(self.img_size[1]))*imr[1])
 			height=int((float(height)/float(self.img_size[1]))*imr[1])
-			qFrom.put(['losenge',x,y,width,height,color])
+			if width>height:
+				rad = height/2
+				self.__draw__.line([(x+rad,y),(x+width-rad,y)],fill=color)
+				self.__draw__.line([(x+rad,y+height),(x+width-rad,y+height)],fill=color)
+				clip = (x,y,x+height,y+height)
+				self.__draw__.arc(clip,90,270,fill=color)
+				clip = ((x+width-height),y,x+width,y+height)
+				self.__draw__.arc(clip,270,90,fill=color)
+			else:
+				rad = width/2
+				self.__draw__.line([(x,y+rad),(x,y+height-rad)],fill=color)
+				self.__draw__.line([(x+width,y+rad),(x+width,y+height-rad)],fill=color)
+				clip = (x,y,x+width,y+width)
+				self.__draw__.arc(clip,180,360,fill=color)
+				clip = (x,y+height-width,x+width,y+height)
+				self.__draw__.arc(clip,360,180,fill=color)
 		def get_mouse_state(self):
-			pos = pygame.mouse.get_pos()
-			state = pygame.mouse.get_pressed()
-			return (pos,state[0])
+			# pos = pygame.mouse.get_pos()
+			# state = pygame.mouse.get_pressed()
+			# return (pos,state[0])
+			pass
 		def get_input_key(self):
 			ky=[]
 			while not qTo.empty():
@@ -198,6 +247,7 @@ qTo
 				if message=='quit':
 					exitSafely()
 				elif message[0]=='keycode':
+					print message
 					key = message[1]
 					if key == 'f1':           keycode = pylink.F1_KEY
 					elif key == 'f2':         keycode = pylink.F2_KEY
@@ -219,7 +269,7 @@ qTo
 					elif key == 'return':     keycode = pylink.ENTER_KEY
 					elif key == 'escape':     keycode = pylink.ESC_KEY
 					elif key == 'tab':        keycode = ord('\t')
-					else:                     keycode = 0
+					else:                     keycode = key
 					ky.append(pylink.KeyInput(keycode))
 			return ky
 
