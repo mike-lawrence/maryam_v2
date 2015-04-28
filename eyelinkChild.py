@@ -96,11 +96,13 @@ qTo
 				message = qTo.get()
 				if message=='quit':
 					exitSafely()
+				else:
+					qTo.put(message)		
 
 	print 'Eyelink connected'
 	eyelink.sendCommand('select_parser_configuration 0')# 0--> standard (cognitive); 1--> sensitive (psychophysical)
 	eyelink.sendCommand('sample_rate 250')
-	eyelink.setLinkEventFilter("SACCADE,BLINK,LEFT,RIGHT")
+	eyelink.setLinkEventFilter("SACCADE,BLINK,FIXATION")
 	eyelink.openDataFile(edfFileName)
 	eyelink.sendCommand("screen_pixel_coords =  %d %d %d %d" %(stimDisplayRes[0]/2 - calibrationDisplaySize[0]/2 , stimDisplayRes[1]/2 - calibrationDisplaySize[1]/2 , stimDisplayRes[0]/2 + calibrationDisplaySize[0]/2 , stimDisplayRes[1]/2 + calibrationDisplaySize[1]/2 ))
 	eyelink.sendMessage("DISPLAY_COORDS  0 0 %d %d" %(stimDisplayRes[0],stimDisplayRes[1]))
@@ -129,31 +131,31 @@ qTo
 			else:#	CAL_GOOD_BEEP or DC_GOOD_BEEP
 				self.__target_beep__done__.play()
 		def clear_cal_display(self):
-			print 'clear_cal_display'
+			# print 'clear_cal_display'
 			qFrom.put('clear_cal_display')
 		def setup_cal_display(self):
-			print 'setup_cal_display'
+			# print 'setup_cal_display'
 			qFrom.put('setup_cal_display')
 		def exit_cal_display(self): 
-			print 'exit_cal_display'
+			# print 'exit_cal_display'
 			qFrom.put('exit_cal_display')
 		def erase_cal_target(self):
-			print 'erase_cal_target'
+			# print 'erase_cal_target'
 			qFrom.put('erase_cal_target')
 		def draw_cal_target(self, x, y):
-			print 'draw_cal_target'
+			# print 'draw_cal_target'
 			qFrom.put(['draw_cal_target',x,y])
 		def setup_image_display(self, width, height):
-			print 'eyelink: setup_image_display'
+			# print 'eyelink: setup_image_display'
 			self.img_size = (width,height)
 		def exit_image_display(self):
-			print 'eyelink: exit_image_display'
+			# print 'eyelink: exit_image_display'
 			pass
 		def image_title(self,text):
-			print 'eyelink: image_title'
+			# print 'eyelink: image_title'
 			pass
 		def set_image_palette(self, r,g,b):
-			print 'eyelink: set_image_palette'
+			# print 'eyelink: set_image_palette'
 			self.imagebuffer = array.array('L')
 			sz = len(r)
 			i = 0
@@ -168,8 +170,7 @@ qTo
 					self.pal.append((bf<<24) |  (gf<<16) | (rf<<8)) #for mac
 				i = i+1
 		def draw_image_line(self, width, line, totlines,buff):
-			print 'eyelink: draw_image_line'
-			print [width, line, totlines,buff]
+			# print 'eyelink: draw_image_line'
 			i = 0
 			while i < width:
 				if buff[i]>=len(self.pal):
@@ -179,13 +180,13 @@ qTo
 			if line == totlines:
 				img = Image.fromstring('RGBX', (width,totlines), self.imagebuffer.tostring())
  				img = img.convert('RGBA')
-				self.__img__ = img
+				self.__img__ = img.copy()
 				self.__draw__ = ImageDraw.Draw(self.__img__)
 				self.draw_cross_hair() #inherited method, calls draw_line and draw_losenge
+				qFrom.put(['image',numpy.array(self.__img__)])
 				self.__img__.save('temp.png')
 				self.__img__ = None
 				self.__draw__ = None
-				qFrom.put(['image',numpy.array(img)])
 				self.imagebuffer = array.array('l')
 		def getColorFromIndex(self,colorindex):
 			if colorindex   ==  pylink.CR_HAIR_COLOR:          return (255,255,255,255)
@@ -195,7 +196,7 @@ qTo
 			elif colorindex ==  pylink.MOUSE_CURSOR_COLOR:     return (255,0,0,255)
 			else: return (0,0,0,0)
 		def draw_line(self,x1,y1,x2,y2,colorindex):
-			print 'eyelink: draw_line'
+			# print 'eyelink: draw_line'
 			if x1<0: x1 = 0
 			if x2<0: x2 = 0
 			if y1<0: y1 = 0
@@ -212,7 +213,7 @@ qTo
 			color = self.getColorFromIndex(colorindex)
 			self.__draw__.line( [(x1,y1),(x2,y2)] , fill=color)
 		def draw_lozenge(self,x,y,width,height,colorindex):
-			print 'eyelink: draw_lozenge'
+			# print 'eyelink: draw_lozenge'
 			color = self.getColorFromIndex(colorindex)
 			imr = self.__img__.size
 			x=int((float(x)/float(self.img_size[0]))*imr[0])
@@ -247,7 +248,7 @@ qTo
 				if message=='quit':
 					exitSafely()
 				elif message[0]=='keycode':
-					print message
+					# print message
 					key = message[1]
 					if key == 'f1':           keycode = pylink.F1_KEY
 					elif key == 'f2':         keycode = pylink.F2_KEY
@@ -308,8 +309,8 @@ qTo
 				newGazeTarget = True
 				gazeTarget = numpy.array(message[1])
 				gazeTargetCriterion = numpy.array(message[2])
-				#print message
-				#print 'waiting for gaze confirmation'
+				# print message
+				# print 'waiting for gaze confirmation'
 			elif message[0]=='accept_trigger':
 				eyelink.accept_trigger()
 			elif message=='doCalibration':
@@ -319,35 +320,37 @@ qTo
 				eyelink.doTrackerSetup()
 				qFrom.put('calibrationComplete')
 				eyelink.startRecording(1,1,1,1) #this retuns immediately takes 10-30ms to actually kick in on the tracker
-		if eyelink.isRecording()==0:
+		if eyelink.isRecording()==0: #stupid, I know, but eyelink.isRecording() returns 0 if it *is* indeed recording!
 			eyeData = eyelink.getNextData()
-			if eyeData==pylink.SAMPLE_TYPE:
+			if eyeData==pylink.STARTFIX:
 				eyeSample = eyelink.getFloatData()
-				if eyeSample.isRightSample():
-					gaze = eyeSample.getRightEye().getGaze()
-				elif eyeSample.isLeftSample():
-					gaze = eyeSample.getLeftEye().getGaze()
-				distFromFixation = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
+				gaze = eyeSample.getStartGaze()
+				gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
 				if newGazeTarget:
-					if distFromFixation<gazeTargetCriterion:
-						# print ['gazeTargetMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
+					if gazeDistFromGazeTarget<gazeTargetCriterion:
+						# print ['gazeTargetMet',gaze,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
 						qFrom.put(['gazeTargetMet',gazeTarget])
 						newGazeTarget = False
 					else:
 						qFrom.put(['gazeTargetNotMet',gazeTarget])
-						# print ['gazeTargetNotMet',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
-				else:
-					if distFromFixation>gazeTargetCriterion:
-						# print ['gazeTargetLost',gaze,gazeTarget,distFromFixation,gazeTargetCriterion]
+						# print ['gazeTargetNotMet',gaze,gazeTarget,gazeDistFromGazeTarget,gazeTargetCriterion]
+			elif eyeData==pylink.ENDSACC:
+				eyeSample = eyelink.getFloatData()
+				gazeStart = eyeSample.getStartGaze()
+				gazeEnd = eyeSample.getEndGaze()
+				gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gazeEnd)-gazeTarget)
+				if gazeDistFromGazeTarget<1000:
+					if gazeDistFromGazeTarget>gazeTargetCriterion:
+						# print ['eyelink: saccade',gazeStart,gazeEnd]
 						if reportSaccades:
 							qFrom.put(['gazeTargetLost',gazeTarget])
 						if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 							if doSounds:
-								saccadeSound.play()
+								saccadeSound.play()				
 			elif eyeData==pylink.STARTBLINK:
+				# print 'eyelink: blink'
 				if reportBlinks:
 					qFrom.put('blink')
-				# print 'blink'
 				if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 					if doSounds:
 						#blinkSound.play()

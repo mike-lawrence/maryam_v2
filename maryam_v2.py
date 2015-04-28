@@ -58,7 +58,7 @@ if __name__ == '__main__':
 	targetOffsetInDegrees = 8 #specify the distance of the target to center
 	placeholderSizeInDegrees = 2
 	placeholderThicknessProportion = .8
-	gazeTargetCriterionInDegrees = 2
+	gazeTargetCriterionInDegrees = 1
 
 	textWidth = .9 #proportion of the stimDisplay to use when drawing instructions
 
@@ -657,12 +657,12 @@ if __name__ == '__main__':
 		
 		#run the trials
 		trialNum = 0
-		for thisTrialInfo in trialList:
+		while len(trialList)>0:
 			#bump the trial number
 			trialNum = trialNum + 1
 			print [block,trialNum]
 			#parse the trial info
-			ttoa , cueLocation , t1Identity , t2Location = thisTrialInfo
+			ttoa , cueLocation , t1Identity , t2Location = trialList.pop()
 			
 			trialDescrptor = '\t'.join(map(str,[subInfo[0],block,trialNum]))
 
@@ -678,6 +678,31 @@ if __name__ == '__main__':
 			drawRing()
 			drawDot(fixationSize)
 			stimDisplay.refresh()
+			#check for Ss trial initiation response
+			trialInitiated = False
+			trialInitiationResponsesMade = [False,False,False,False]
+			start = getTime()
+			while not trialInitiated:
+				while not stamperChild.qFrom.empty():
+					event = stamperChild.qFrom.get()
+					if event['type'] == 'key' :
+						key = event['value']
+						time = event['time']
+						if key=='escape':
+							exitSafely()
+						elif key==t1ResponseKeys[0]:
+							trialInitiationResponsesMade[0] = True
+						elif key==t1ResponseKeys[1]:
+							trialInitiationResponsesMade[1] = True
+						elif key==t2ResponseKeys[0]:
+							trialInitiationResponsesMade[2] = True
+						elif key==t2ResponseKeys[1]:
+							trialInitiationResponsesMade[3] = True
+						# print [key,trialInitiationResponsesMade]
+				if all(trialInitiationResponsesMade):
+					trialInitiated = True
+					trialInitiationTime = time - start
+							
 			if doEyelink: 
 				gazeTarget = [stimDisplayRes[0]/2.0,stimDisplayRes[1]/2.0]
 				eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion])
@@ -928,13 +953,19 @@ if __name__ == '__main__':
 					if not eyelinkChild.qFrom.empty():
 						message = eyelinkChild.qFrom.get()
 						if message=='blink':
+							# print 'main: blink'
 							blink = 'TRUE'
 							trialDone = True
 							feedbackText = 'Blinked!'
+							trialList.append([ttoa , cueLocation , t1Identity , t2Location])
+							random.shuffle(trialList)
 						elif message[0]=='gazeTargetLost': #saccade
+							# print 'main: saccade'
 							saccade = 'TRUE'
 							trialDone = True
 							feedbackText = 'Eyes moved!'
+							trialList.append([ttoa , cueLocation , t1Identity , t2Location])
+							random.shuffle(trialList)
 			#trial done, do feedback
 			if doEyelink:
 				eyelinkChild.qTo.put(['sendMessage','trialDone\t'+trialDescrptor])
@@ -968,7 +999,7 @@ if __name__ == '__main__':
 								stimDisplay.refresh()
 								feedbackDoneTime = getTime() + feedbackDuration
 			#write out trial info
-			dataToWrite = '\t'.join(map(str,[ subInfoForFile , messageViewingTime , block , trialNum , ttoa , cueLocation , t1Identity , t2Location , badKey , t1Response , t1RT , tooManyT1 , t1TooSoon , t1ResponseWhenT1Absent , t2Response , t2RT , tooManyT2 , t2TooSoon , t2ResponseWhenT2Absent , feedbackResponse , recalibration , blink , saccade]))
+			dataToWrite = '\t'.join(map(str,[ subInfoForFile , messageViewingTime , block , trialNum , trialInitiationTime , ttoa , cueLocation , t1Identity , t2Location , badKey , t1Response , t1RT , tooManyT1 , t1TooSoon , t1ResponseWhenT1Absent , t2Response , t2RT , tooManyT2 , t2TooSoon , t2ResponseWhenT2Absent , feedbackResponse , recalibration , blink , saccade]))
 			writerChild.qTo.put(['write','data',dataToWrite])
 			if (trialNum==27)&(len(trialList)>27):
 				messageViewingTime = showMessage('Take a break!\n\nWhen you are ready to continue the experiment, press any key.')
@@ -1005,7 +1036,7 @@ if __name__ == '__main__':
 
 	writerChild.qTo.put(['newFile','data','_Data/'+filebase+'/'+filebase+'_data.txt'])
 	writerChild.qTo.put(['write','data',password])
-	header ='\t'.join(['id' , 'order' , 'year' , 'month' , 'day' , 'hour' , 'minute' , 'sex' , 'age'  , 'handedness' , 'messageViewingTime' , 'block' , 'trialNum' , 'ttoa' , 'cueLocation' , 't1Identity' , 't2Location' , 'badKey' , 't1Response' , 't1RT' , 'tooManyT1' , 't1TooSoon' , 't1ResponseWhenT1Absent' , 't2Response' , 't2RT' , 'tooManyT2' , 't2TooSoon' , 't2ResponseWhenT2Absent' , 'feedbackResponse' , 'recalibration' , 'blink' , 'saccade' ])
+	header ='\t'.join(['id' , 'order' , 'year' , 'month' , 'day' , 'hour' , 'minute' , 'sex' , 'age'  , 'handedness' , 'messageViewingTime' , 'block' , 'trialNum' , 'trialInitiationTime' 'ttoa' , 'cueLocation' , 't1Identity' , 't2Location' , 'badKey' , 't1Response' , 't1RT' , 'tooManyT1' , 't1TooSoon' , 't1ResponseWhenT1Absent' , 't2Response' , 't2RT' , 'tooManyT2' , 't2TooSoon' , 't2ResponseWhenT2Absent' , 'feedbackResponse' , 'recalibration' , 'blink' , 'saccade' ])
 	writerChild.qTo.put(['write','data',header])
 
 
@@ -1085,4 +1116,4 @@ if __name__ == '__main__':
 
 	messageViewingTime = showMessage('You\'re all done!\nPlease the person running this experiment will be with you shortly.')
 
-	exit_safely()
+	exitSafely()
