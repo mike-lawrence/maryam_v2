@@ -1036,7 +1036,7 @@ if __name__ == '__main__':
 
 	writerChild.qTo.put(['newFile','data','_Data/'+filebase+'/'+filebase+'_data.txt'])
 	writerChild.qTo.put(['write','data',password])
-	header ='\t'.join(['id' , 'order' , 'year' , 'month' , 'day' , 'hour' , 'minute' , 'sex' , 'age'  , 'handedness' , 'messageViewingTime' , 'block' , 'trialNum' , 'trialInitiationTime' 'ttoa' , 'cueLocation' , 't1Identity' , 't2Location' , 'badKey' , 't1Response' , 't1RT' , 'tooManyT1' , 't1TooSoon' , 't1ResponseWhenT1Absent' , 't2Response' , 't2RT' , 'tooManyT2' , 't2TooSoon' , 't2ResponseWhenT2Absent' , 'feedbackResponse' , 'recalibration' , 'blink' , 'saccade' ])
+	header ='\t'.join(['id' , 'order' , 'year' , 'month' , 'day' , 'hour' , 'minute' , 'sex' , 'age'  , 'handedness' , 'messageViewingTime' , 'block' , 'trialNum' , 'trialInitiationTime', 'ttoa' , 'cueLocation' , 't1Identity' , 't2Location' , 'badKey' , 't1Response' , 't1RT' , 'tooManyT1' , 't1TooSoon' , 't1ResponseWhenT1Absent' , 't2Response' , 't2RT' , 'tooManyT2' , 't2TooSoon' , 't2ResponseWhenT2Absent' , 'feedbackResponse' , 'recalibration' , 'blink' , 'saccade' ])
 	writerChild.qTo.put(['write','data',header])
 
 
