@@ -186,7 +186,6 @@ qTo
 				self.__draw__ = ImageDraw.Draw(self.__img__)
 				self.draw_cross_hair() #inherited method, calls draw_line and draw_losenge
 				qFrom.put(['image',numpy.array(self.__img__)])
-				self.__img__.save('temp.png')
 				self.__img__ = None
 				self.__draw__ = None
 				self.imagebuffer = array.array('I')
