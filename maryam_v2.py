@@ -23,7 +23,7 @@ if __name__ == '__main__':
 	eyelinkWindowSize = (200,200)
 	eyelinkWindowPosition = (-1440+400,0)
 	eyelinkIP = '100.1.1.1'
-	edfFileName = 'temp.edf'
+	edfFileName = 'temp2.edf'
 	edfPath = './'
 	saccadeSoundFile = '_Stimuli/stop.wav'
 	blinkSoundFile = '_Stimuli/stop.wav'
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	cueCuebackOA = 0.200
 	cuebackDuration = 0.050
 	responseTimeout = 2.000
-	feedbackDuration = 2.000
+	feedbackDuration = 1.000
 
 	numberOfBlocks = [5,6]
 	repsPerSoloPractice = 2
@@ -439,11 +439,11 @@ if __name__ == '__main__':
 	def exitSafely():
 		stimDisplayMirrorChild.stop()
 		writerChild.stop()
-		if doEyelink:
-			eyelinkChild.stop()
 		stamperChild.stop(killAfter=60)
 		while stamperChild.isAlive():
 			time.sleep(.1)
+		if doEyelink:
+			eyelinkChild.stop()
 		sys.exit()
 
 
@@ -702,7 +702,7 @@ if __name__ == '__main__':
 				if all(trialInitiationResponsesMade):
 					trialInitiated = True
 					trialInitiationTime = time - start
-							
+			print 'trial Initiated'				
 			if doEyelink: 
 				gazeTarget = [stimDisplayRes[0]/2.0,stimDisplayRes[1]/2.0]
 				eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion])
