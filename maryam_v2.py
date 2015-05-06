@@ -3,31 +3,32 @@ if __name__ == '__main__':
 	#Important parameters
 	########
 
-	viewingDistance = 60.0 #units can be anything so long as they match those used in stimDisplayWidth below
-	stimDisplayWidth = 54.5 #units can be anything so long as they match those used in viewingDistance above
-	stimDisplayRes = (1920,1080) #pixel resolution of the stimDisplay
-	stimDisplayPosition = (-1440-1920,1680-1080)
+	viewingDistance = 100.0 #units can be anything so long as they match those used in stimDisplayWidth below
+	stimDisplayWidth = 51.6 #units can be anything so long as they match those used in viewingDistance above
+	stimDisplayRes = (1920,1200) #pixel resolution of the stimDisplay
+	stimDisplayPosition = (1024,0)
 
 	writerWindowSize = (200,200)
-	writerWindowPosition = (-1440+200,0)
+	writerWindowPosition = (200,0)
 
 	stamperWindowSize = (200,200)
-	stamperWindowPosition = (-1440,0)
+	stamperWindowPosition = (0,0)
 	stamperWindowColor = [255,255,255]
 	stamperDoBorder = True
 
 	photoStimSize = [20,20]
-	photoStimPosition = [1920-photoStimSize[0]/2,1080-photoStimSize[1]/2]
+	photoStimPosition = [1920-photoStimSize[0]/2,1200-photoStimSize[1]/2]
 
 	doEyelink = True
 	eyelinkWindowSize = (200,200)
-	eyelinkWindowPosition = (-1440+400,0)
+	eyelinkWindowPosition = (400,0)
 	eyelinkIP = '100.1.1.1'
 	edfFileName = 'temp2.edf'
 	edfPath = './'
 	saccadeSoundFile = '_Stimuli/stop.wav'
 	blinkSoundFile = '_Stimuli/stop.wav'
 	calibrationDotSizeInDegrees = .5
+	gazeTargetCriterionInDegrees = 1
 
 	hiSoundFile = './_Stimuli/hi.wav'
 	loSoundFile = './_Stimuli/lo.wav'
@@ -58,7 +59,6 @@ if __name__ == '__main__':
 	targetOffsetInDegrees = 8 #specify the distance of the target to center
 	placeholderSizeInDegrees = 2
 	placeholderThicknessProportion = .8
-	gazeTargetCriterionInDegrees = 1
 
 	textWidth = .9 #proportion of the stimDisplay to use when drawing instructions
 
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 		eyelinkChild.initDict['windowPosition'] = eyelinkWindowPosition
 		eyelinkChild.initDict['stimDisplayPosition'] = stimDisplayPosition
 		eyelinkChild.initDict['stimDisplayRes'] = stimDisplayRes
-		eyelinkChild.initDict['calibrationDisplaySize'] = [int(targetOffset*2),int(targetOffset)]
+		eyelinkChild.initDict['calibrationDisplaySize'] = stimDisplayRes#[int(targetOffset*2),int(targetOffset)]
 		eyelinkChild.initDict['calibrationDotSize'] = int(calibrationDotSize)
 		eyelinkChild.initDict['eyelinkIP'] = eyelinkIP
 		eyelinkChild.initDict['edfFileName'] = edfFileName
@@ -207,22 +207,22 @@ if __name__ == '__main__':
 	time.sleep(1) #give the other windows some time to initialize
 	writerChild.start()
 
-	########
-	# Initialize the stimDisplayMirrorChild
-	########
-	stimDisplayMirrorChild = fileForker.childClass(childFile='stimDisplayMirrorChild.py')
-	stimDisplayMirrorChild.initDict['windowSize'] = [1920,1080]#[stimDisplayRes[0]/2,stimDisplayRes[1]/2]
-	stimDisplayMirrorChild.initDict['windowPosition'] = [-1440,1680-1080]
-	time.sleep(1) #give the other windows some time to initialize
-	stimDisplayMirrorChild.start()
+	# ########
+	# # Initialize the stimDisplayMirrorChild
+	# ########
+	# stimDisplayMirrorChild = fileForker.childClass(childFile='stimDisplayMirrorChild.py')
+	# stimDisplayMirrorChild.initDict['windowSize'] = [1920/2,1200/2]#[stimDisplayRes[0]/2,stimDisplayRes[1]/2]
+	# stimDisplayMirrorChild.initDict['windowPosition'] = [0,0]
+	# time.sleep(1) #give the other windows some time to initialize
+	# stimDisplayMirrorChild.start()
 
 	########
 	# Initialize the stimDisplay
 	########
 	class stimDisplayClass:
-		def __init__(self,stimDisplayRes,stimDisplayPosition,stimDisplayMirrorChild):
+		def __init__(self,stimDisplayRes,stimDisplayPosition):#,stimDisplayMirrorChild):
 			self.stimDisplayRes = stimDisplayRes
-			self.stimDisplayMirrorChild = stimDisplayMirrorChild
+			# self.stimDisplayMirrorChild = stimDisplayMirrorChild
 			sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
 			self.stimDisplayRes = stimDisplayRes
 			self.stimDisplayPosition = stimDisplayPosition
@@ -241,13 +241,13 @@ if __name__ == '__main__':
 			self.refresh()
 		def refresh(self,clearColor=[0,0,0,1]):
 			sdl2.SDL_GL_SwapWindow(self.Window)
-			self.stimDisplayMirrorChild.qTo.put(['frame',self.stimDisplayRes,gl.glReadPixels(0, 0, self.stimDisplayRes[0], self.stimDisplayRes[1], gl.GL_BGR, gl.GL_UNSIGNED_BYTE)])
+			# self.stimDisplayMirrorChild.qTo.put(['frame',self.stimDisplayRes,gl.glReadPixels(0, 0, self.stimDisplayRes[0], self.stimDisplayRes[1], gl.GL_BGR, gl.GL_UNSIGNED_BYTE)])
 			gl.glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3])
 			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
 
 	time.sleep(1)
-	stimDisplay = stimDisplayClass(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition,stimDisplayMirrorChild=stimDisplayMirrorChild)
+	stimDisplay = stimDisplayClass(stimDisplayRes=stimDisplayRes,stimDisplayPosition=stimDisplayPosition)#,stimDisplayMirrorChild=stimDisplayMirrorChild)
 
 
 	########
@@ -437,7 +437,7 @@ if __name__ == '__main__':
 
 	#define a function that will kill everything safely
 	def exitSafely():
-		stimDisplayMirrorChild.stop()
+		# stimDisplayMirrorChild.stop()
 		writerChild.stop()
 		stamperChild.stop(killAfter=60)
 		while stamperChild.isAlive():

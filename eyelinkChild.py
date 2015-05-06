@@ -102,7 +102,7 @@ qTo
 
 	print 'Eyelink connected'
 	eyelink.sendCommand('select_parser_configuration 0')# 0--> standard (cognitive); 1--> sensitive (psychophysical)
-	eyelink.sendCommand('sample_rate 500')
+	# eyelink.sendCommand('sample_rate 500')
 	eyelink.setLinkEventFilter("SACCADE,BLINK,FIXATION")
 	eyelink.openDataFile(edfFileName)
 	eyelink.sendCommand("screen_pixel_coords =  %d %d %d %d" %(stimDisplayRes[0]/2 - calibrationDisplaySize[0]/2 , stimDisplayRes[1]/2 - calibrationDisplaySize[1]/2 , stimDisplayRes[0]/2 + calibrationDisplaySize[0]/2 , stimDisplayRes[1]/2 + calibrationDisplaySize[1]/2 ))
@@ -149,7 +149,6 @@ qTo
 		def setup_image_display(self, width, height):
 			# print 'eyelink: setup_image_display'
 			self.img_size = (width,height)
-			return 0
 		def exit_image_display(self):
 			# print 'eyelink: exit_image_display'
 			pass
@@ -327,28 +326,39 @@ qTo
 			eyeData = eyelink.getNextData()
 			if eyeData==pylink.SAMPLE_TYPE:
 				eyeSample = eyelink.getFloatData()
-				gaze = eyeSample.getRightEye().getGaze()
-				if gaze[0]!=-32768.0:
-					gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
-					if newGazeTarget:
-						if gazeDistFromGazeTarget<gazeTargetCriterion:
-							# pr.,azint ['gazeTargetMet',gaze,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
-							qFrom.put(['gazeTargetMet',gazeTarget])
-							newGazeTarget = False
-						else:
-							qFrom.put(['gazeTargetNotMet',gazeTarget])
-							# print ['gazeTargetNotMet',gaze,gazeTarget,gazeDistFromGazeTarget,gazeTargetCriterion]
+				gaze = None
+				if eyeSample.isRightSample():
+					gaze = eyeSample.getRightEye().getGaze()
+				elif eyeSample.isLeftSample():
+					gaze = eyeSample.getLeftEye().getGaze()
+				if gaze!=None:
+					if gaze[0]!=-32768.0:
+						gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
+						if newGazeTarget:
+							if gazeDistFromGazeTarget<gazeTargetCriterion:
+								print ['gazeTargetMet',gaze,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
+								qFrom.put(['gazeTargetMet',gazeTarget])
+								newGazeTarget = False
+							else:
+								qFrom.put(['gazeTargetNotMet',gazeTarget])
+								print ['gazeTargetNotMet',gaze,gazeTarget,gazeDistFromGazeTarget,gazeTargetCriterion]
 			elif eyeData==pylink.ENDSACC:
 				eyeSample = eyelink.getFloatData()
 				gazeStart = eyeSample.getStartGaze()
 				gazeEnd = eyeSample.getEndGaze()
-				if (gazeStart[0]!=-32768.0) & (gazeStart[0]!=-32768.0):
+				print ['eyelink: saccade',gazeStart,gazeEnd]
+				if (gazeStart[0]!=-32768.0) & (gazeEnd[0]!=-32768.0):
 					gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gazeEnd)-gazeTarget)
 					if gazeDistFromGazeTarget<1000:
-						if gazeDistFromGazeTarget>gazeTargetCriterion:
-							# print ['eyelink: saccade',gazeStart,gazeEnd]
+						if newGazeTarget:
+							if gazeDistFromGazeTarget<gazeTargetCriterion:
+								print ['gazeTargetMet',gazeEnd,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
+								qFrom.put(['gazeTargetMet',gazeTarget])
+								newGazeTarget = False
+						elif gazeDistFromGazeTarget>gazeTargetCriterion:
 							if reportSaccades:
 								qFrom.put(['gazeTargetLost',gazeTarget])
+								print ['gazeTargetLost',gazeTarget]
 							if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 								if doSounds:
 									saccadeSound.play()				
@@ -356,9 +366,9 @@ qTo
 				lastStartBlinkTime = time.time()
 			elif eyeData==pylink.ENDBLINK:
 				if (time.time()-lastStartBlinkTime)>.1:
-					print 'eyelink: blink'
 					if reportBlinks:
 						qFrom.put('blink')
+						print 'eyelink: blink'
 					if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 						if doSounds:
 							#blinkSound.play()
