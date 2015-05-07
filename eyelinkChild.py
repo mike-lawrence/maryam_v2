@@ -71,7 +71,7 @@ qTo
 
 	def exitSafely():
 		if 'eyelink' in locals():
-			if eyelink.isRecording():
+			if eyelink.isRecording()==0:
 				eyelink.stopRecording()
 			eyelink.setOfflineMode()
 			eyelink.closeDataFile()
@@ -103,7 +103,7 @@ qTo
 	print 'Eyelink connected'
 	eyelink.sendCommand('select_parser_configuration 0')# 0--> standard (cognitive); 1--> sensitive (psychophysical)
 	# eyelink.sendCommand('sample_rate 500')
-	eyelink.setLinkEventFilter("SACCADE,BLINK,FIXATION")
+	eyelink.setLinkEventFilter("SACCADE,BLINK,FIXATION,LEFT,RIGHT")
 	eyelink.openDataFile(edfFileName)
 	eyelink.sendCommand("screen_pixel_coords =  %d %d %d %d" %(stimDisplayRes[0]/2 - calibrationDisplaySize[0]/2 , stimDisplayRes[1]/2 - calibrationDisplaySize[1]/2 , stimDisplayRes[0]/2 + calibrationDisplaySize[0]/2 , stimDisplayRes[1]/2 + calibrationDisplaySize[1]/2 ))
 	eyelink.sendMessage("DISPLAY_COORDS  0 0 %d %d" %(stimDisplayRes[0],stimDisplayRes[1]))
@@ -249,7 +249,7 @@ qTo
 					print 'received message to exit'
 					exitSafely()
 				elif message[0]=='keycode':
-					# print message
+					print message
 					key = message[1]
 					if key == 'f1':           keycode = pylink.F1_KEY
 					elif key == 'f2':         keycode = pylink.F2_KEY
@@ -271,13 +271,18 @@ qTo
 					elif key == 'return':     keycode = pylink.ENTER_KEY
 					elif key == 'escape':     keycode = pylink.ESC_KEY
 					elif key == 'tab':        keycode = ord('\t')
-					else:                     keycode = key
+					elif key == 'space':      keycode = 32
+					elif key == 'return':     keycode = 13
+					elif key == 'c':          keycode = 99
+					elif key == 'v':          keycode = 118
+					elif key == 'escape':     keycode = 27
+					elif key == 'o':          keycode = 111
+					else:                     keycode = 0
 					ky.append(pylink.KeyInput(keycode))
 			return ky
 
 	customDisplay = EyeLinkCoreGraphicsPySDL2()
 	pylink.openGraphicsEx(customDisplay)
-	eyeUsed = eyelink.eyeAvailable()
 	newGazeTarget = False
 	gazeTarget = numpy.array(calibrationDisplaySize)/2.0
 	gazeTargetCriterion = calibrationDotSize
@@ -306,6 +311,18 @@ qTo
 				reportBlinks = message[1]
 			elif message[0]=='sendMessage':
 				eyelink.sendMessage(message[1])
+			elif message=='doDriftCorrect':
+				if eyelink.isRecording()==0:
+					eyelink.stopRecording()
+				try:
+					error = eyelink.doDriftCorrect(calibrationDisplaySize[0]/2,calibrationDisplaySize[1]/2,0,1)
+					if error != 27: 
+						qFrom.put('driftCorrectComplete')
+						eyelink.startRecording(1,1,1,1) #this retuns immediately takes 10-30ms to actually kick in on the tracker
+					else:
+						qFrom.put('doCalibration')
+				except:
+					qFrom.put('doCalibration')
 			elif message[0]=='newGazeTarget':
 				# print message
 				newGazeTarget = True
@@ -317,32 +334,31 @@ qTo
 				eyelink.accept_trigger()
 			elif message=='doCalibration':
 				doSounds = False
-				if eyelink.isRecording():
+				if eyelink.isRecording()==0:
 					eyelink.stopRecording()
 				eyelink.doTrackerSetup()
 				qFrom.put('calibrationComplete')
-				eyelink.startRecording(1,1,1,1) #this retuns immediately takes 10-30ms to actually kick in on the tracker
 		if eyelink.isRecording()==0: #stupid, I know, but eyelink.isRecording() returns 0 if it *is* indeed recording!
 			eyeData = eyelink.getNextData()
-			if eyeData==pylink.SAMPLE_TYPE:
-				eyeSample = eyelink.getFloatData()
-				gaze = None
-				if eyeSample.isRightSample():
-					gaze = eyeSample.getRightEye().getGaze()
-				elif eyeSample.isLeftSample():
-					gaze = eyeSample.getLeftEye().getGaze()
-				if gaze!=None:
-					if gaze[0]!=-32768.0:
-						gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
-						if newGazeTarget:
-							if gazeDistFromGazeTarget<gazeTargetCriterion:
-								print ['gazeTargetMet',gaze,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
-								qFrom.put(['gazeTargetMet',gazeTarget])
-								newGazeTarget = False
-							else:
-								qFrom.put(['gazeTargetNotMet',gazeTarget])
-								print ['gazeTargetNotMet',gaze,gazeTarget,gazeDistFromGazeTarget,gazeTargetCriterion]
-			elif eyeData==pylink.ENDSACC:
+			# if eyeData==pylink.SAMPLE_TYPE:
+			# 	eyeSample = eyelink.getFloatData()
+			# 	gaze = None
+			# 	if eyeSample.isRightSample():
+			# 		gaze = eyeSample.getRightEye().getGaze()
+			# 	elif eyeSample.isLeftSample():
+			# 		gaze = eyeSample.getLeftEye().getGaze()
+			# 	if gaze!=None:
+			# 		if gaze[0]!=-32768.0:
+			# 			gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gaze)-gazeTarget)
+			# 			if newGazeTarget:
+			# 				if gazeDistFromGazeTarget<gazeTargetCriterion:
+			# 					print ['gazeTargetMet',gaze,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
+			# 					qFrom.put(['gazeTargetMet',gazeTarget])
+			# 					newGazeTarget = False
+			# 				else:
+			# 					qFrom.put(['gazeTargetNotMet',gazeTarget])
+			# 					print ['gazeTargetNotMet',gaze,gazeTarget,gazeDistFromGazeTarget,gazeTargetCriterion]
+			if eyeData==pylink.ENDSACC:
 				eyeSample = eyelink.getFloatData()
 				gazeStart = eyeSample.getStartGaze()
 				gazeEnd = eyeSample.getEndGaze()

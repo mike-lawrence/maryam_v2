@@ -643,8 +643,6 @@ if __name__ == '__main__':
 		while (getTime()-start)<1:
 			checkResponses() #clears any residual between-block responses
 		
-		print 'block started'
-
 		#get a trial list
 		if block=='t1Practice':
 			trialList = getT1PracticeTrials()
@@ -660,7 +658,7 @@ if __name__ == '__main__':
 		while len(trialList)>0:
 			#bump the trial number
 			trialNum = trialNum + 1
-			print [block,trialNum]
+			print 'Block: '+str(block)+'; Trial: '+str(trialNum)
 			#parse the trial info
 			ttoa , cueLocation , t1Identity , t2Location = trialList.pop()
 			
@@ -674,67 +672,110 @@ if __name__ == '__main__':
 			else:
 				t1Sound = None
 
-			#check fixation
+			drawRing(-targetOffset)
+			drawRing(targetOffset)
 			drawRing()
-			drawDot(fixationSize)
+			drawDot(fixationSize*2)
 			stimDisplay.refresh()
-			#check for Ss trial initiation response
-			trialInitiated = False
-			trialInitiationResponsesMade = [False,False,False,False]
 			start = getTime()
-			while not trialInitiated:
-				while not stamperChild.qFrom.empty():
-					event = stamperChild.qFrom.get()
-					if event['type'] == 'key' :
-						key = event['value']
-						time = event['time']
-						if key=='escape':
-							exitSafely()
-						elif key==t1ResponseKeys[0]:
-							trialInitiationResponsesMade[0] = True
-						elif key==t1ResponseKeys[1]:
-							trialInitiationResponsesMade[1] = True
-						elif key==t2ResponseKeys[0]:
-							trialInitiationResponsesMade[2] = True
-						elif key==t2ResponseKeys[1]:
-							trialInitiationResponsesMade[3] = True
-						# print [key,trialInitiationResponsesMade]
-				if all(trialInitiationResponsesMade):
-					trialInitiated = True
-					trialInitiationTime = time - start
-			print 'trial Initiated'				
-			if doEyelink: 
-				gazeTarget = [stimDisplayRes[0]/2.0,stimDisplayRes[1]/2.0]
-				eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion])
-				waitingForGazeTarget = True
-				while waitingForGazeTarget:
-					if not eyelinkChild.qFrom.empty():
-						message = eyelinkChild.qFrom.get()
-						if message=='blink':
-							#deal with blinks here
-							pass
-						elif message[0]=='gazeTargetLost':
-							#deal with unintended saccades here
-							pass
-						elif message[0]=='gazeTargetMet':
-							if (message[1][0]==gazeTarget[0]) and (message[1][1]==gazeTarget[1]): #double check that this isn't an old message
-								waitingForGazeTarget = False #fixation achieved
-					#check for responses while waiting for fixation
-					while not stamperChild.qFrom.empty():
-						event = stamperChild.qFrom.get()
-						if event['type'] == 'key' :
-							key = event['value']
-							time = event['time']
-							if key=='escape':
-								exitSafely()
-							if key=='p': #recalibration requested
+			if doEyelink:
+				outerDone = False
+				while not outerDone:
+					drawRing(-targetOffset)
+					drawRing(targetOffset)
+					drawRing()
+					drawDot(fixationSize*2)
+					stimDisplay.refresh()
+					outerDone = True #set to False below if need to re-do drift correct after re-calibration
+					eyelinkChild.qTo.put('doDriftCorrect')
+					innerDone = False
+					while not innerDone:
+						if not eyelinkChild.qFrom.empty():
+							message = eyelinkChild.qFrom.get()
+							if message=='driftCorrectComplete':
+								innerDone = True
+							elif message=='doCalibration':
 								doCalibration()
-								drawRing()
-								drawDot(fixationSize)
-								stimDisplay.refresh()
-								eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion]) #calibration sees a window of 2*targetOffset wide, so [targetOffset,targetOffset] is center
-							elif key=='q':
-								waitingForGazeTarget = False
+								innerDone = True
+								outerDone = False
+						while not stamperChild.qFrom.empty():
+							event = stamperChild.qFrom.get()
+							if event['type'] == 'key' :
+								key = event['value']
+								time = event['time']
+								if key=='escape':
+									exitSafely()
+								elif key=='p': #recalibration requested
+									doCalibration()
+									innerDone = True
+									outerDone = False
+								else:
+									eyelinkChild.qTo.put(['keycode',key])
+									#print ['main','keycode',key]
+			trialInitiationTime = getTime() - start
+			#check fixation
+			# drawRing()
+			# drawDot(fixationSize)
+			# stimDisplay.refresh()
+			# #check for Ss trial initiation response
+			# trialInitiated = False
+			# trialInitiationResponsesMade = [False,False,False,False]
+			# start = getTime()
+			# while not trialInitiated:
+			# 	while not stamperChild.qFrom.empty():
+			# 		event = stamperChild.qFrom.get()
+			# 		if event['type'] == 'key' :
+			# 			key = event['value']
+			# 			time = event['time']
+			# 			if key=='escape':
+			# 				exitSafely()
+			# 			elif key==t1ResponseKeys[0]:
+			# 				trialInitiationResponsesMade[0] = True
+			# 			elif key==t1ResponseKeys[1]:
+			# 				trialInitiationResponsesMade[1] = True
+			# 			elif key==t2ResponseKeys[0]:
+			# 				trialInitiationResponsesMade[2] = True
+			# 			elif key==t2ResponseKeys[1]:
+			# 				trialInitiationResponsesMade[3] = True
+			# 			# print [key,trialInitiationResponsesMade]
+			# 	if all(trialInitiationResponsesMade):
+			# 		trialInitiated = True
+			# 		trialInitiationTime = time - start
+			# print 'trial Initiated'
+			# if doEyelink:
+			# 	gazeTarget = [stimDisplayRes[0]/2.0,stimDisplayRes[1]/2.0]
+			# 	eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion])
+			# 	waitingForGazeTarget = True
+			# 	while waitingForGazeTarget:
+			# 		if not eyelinkChild.qFrom.empty():
+			# 			message = eyelinkChild.qFrom.get()
+			# 			if message=='blink':
+			# 				#deal with blinks here
+			# 				pass
+			# 			elif message[0]=='gazeTargetLost':
+			# 				#deal with unintended saccades here
+			# 				pass
+			# 			elif message[0]=='gazeTargetMet':
+			# 				if (message[1][0]==gazeTarget[0]) and (message[1][1]==gazeTarget[1]): #double check that this isn't an old message
+			# 					waitingForGazeTarget = False #fixation achieved
+			# 		#check for responses while waiting for fixation
+			# 		while not stamperChild.qFrom.empty():
+			# 			event = stamperChild.qFrom.get()
+			# 			if event['type'] == 'key' :
+			# 				key = event['value']
+			# 				time = event['time']
+			# 				if key=='escape':
+			# 					exitSafely()
+			# 				if key=='p': #recalibration requested
+			# 					doCalibration()
+			# 					drawRing()
+			# 					drawDot(fixationSize)
+			# 					stimDisplay.refresh()
+			# 					eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion]) #calibration sees a window of 2*targetOffset wide, so [targetOffset,targetOffset] is center
+			# 				elif key=='q':
+			# 					waitingForGazeTarget = False
+
+			if doEyelink:
 				eyelinkChild.qTo.put(['reportBlinks',True])
 				eyelinkChild.qTo.put(['reportSaccades',True])
 				eyelinkChild.qTo.put(['sendMessage','trialStart\t'+trialDescrptor])
