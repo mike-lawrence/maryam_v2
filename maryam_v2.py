@@ -418,6 +418,18 @@ if __name__ == '__main__':
 		# gl.glEnd()
 		# gl.glColor3f(0,0,0)
 
+	def drawCalTarget(x=stimDisplayRes[0]/2,y=stimDisplayRes[1]/2):
+		gl.glColor3f(.5,.5,.5)
+		gl.glBegin(gl.GL_POLYGON)
+		for i in range(360):
+			gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/2.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/2.0))
+		gl.glEnd()
+		gl.glColor3f(0,0,0)
+		gl.glBegin(gl.GL_POLYGON)
+		for i in range(360):
+			gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/8.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/8.0))
+		gl.glEnd()
+
 
 	########
 	# Helper functions
@@ -564,8 +576,35 @@ if __name__ == '__main__':
 		random.shuffle(trials)
 		return trials
 
+	def getTrialsForT1Only():
+		trials = []
+		ttoa = 'NA'
+		cueLocation = 'NA'
+		t2Location = 'NA'
+		for t1Identity in t1IdentityList:
+			trials.append([ttoa,cueLocation,t1Identity,t2Location])
+		random.shuffle(trial)
+		return trials
 
-	def getTrials(includeT1=True,includeT2=True):
+	def getTrialsForT1withCue():
+		trials = []
+		ttoa = 'NA'
+		t2Location = 'NA'
+		for t1Identity in t1IdentityList:
+			for cueLocation in cueLocationList:
+				trials.append([ttoa,cueLocation,t1Identity,t2Location])
+		random.shuffle(trial)
+		return trials
+
+	def getTrialsForT2withCue():
+		trials = []
+		ttoa = 'NA'
+		t1IdentityList = 'NA'
+		for t2Location in t2LocationList:
+			for cueLocation in cueLocationList:
+				for 
+
+	def getTrials(includeCue=True,includeT1=True,includeT2=True):
 		trials=[]
 		for ttoa in ttoaList:
 			for cueLocation in cueLocationList:
@@ -620,16 +659,7 @@ if __name__ == '__main__':
 				elif message[0]=='draw_cal_target':
 					x = message[1]
 					y = message[2]
-					gl.glColor3f(.5,.5,.5)
-					gl.glBegin(gl.GL_POLYGON)
-					for i in range(360):
-						gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/2.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/2.0))
-					gl.glEnd()
-					gl.glColor3f(0,0,0)
-					gl.glBegin(gl.GL_POLYGON)
-					for i in range(360):
-						gl.glVertex2f( x + math.sin(i*math.pi/180.0)*(calibrationDotSize/8.0) , y + math.cos(i*math.pi/180.0)*(calibrationDotSize/8.0))
-					gl.glEnd()
+					drawCalTarget(x,y)
 					stimDisplay.refresh()
 				elif message[0]=='image':
 					blitNumpy(message[1],stimDisplayRes[0]/2,stimDisplayRes[1]/2,xCentered=True,yCentered=True)
@@ -664,18 +694,10 @@ if __name__ == '__main__':
 			
 			trialDescrptor = '\t'.join(map(str,[subInfo[0],block,trialNum]))
 
-			#prep the t1 sound
-			if t1Identity=='hi':
-				t1Sound = Sound(hiSoundFile)
-			elif t1Identity=='lo':
-				t1Sound = Sound(loSoundFile)
-			else:
-				t1Sound = None
-
 			drawRing(-targetOffset)
 			drawRing(targetOffset)
 			drawRing()
-			drawDot(fixationSize*2)
+			drawCalTarget()
 			stimDisplay.refresh()
 			start = getTime()
 			if doEyelink:
@@ -684,7 +706,7 @@ if __name__ == '__main__':
 					drawRing(-targetOffset)
 					drawRing(targetOffset)
 					drawRing()
-					drawDot(fixationSize*2)
+					drawCalTarget()
 					stimDisplay.refresh()
 					outerDone = True #set to False below if need to re-do drift correct after re-calibration
 					eyelinkChild.qTo.put('doDriftCorrect')
@@ -712,73 +734,10 @@ if __name__ == '__main__':
 								else:
 									eyelinkChild.qTo.put(['keycode',key])
 									#print ['main','keycode',key]
-			trialInitiationTime = getTime() - start
-			#check fixation
-			# drawRing()
-			# drawDot(fixationSize)
-			# stimDisplay.refresh()
-			# #check for Ss trial initiation response
-			# trialInitiated = False
-			# trialInitiationResponsesMade = [False,False,False,False]
-			# start = getTime()
-			# while not trialInitiated:
-			# 	while not stamperChild.qFrom.empty():
-			# 		event = stamperChild.qFrom.get()
-			# 		if event['type'] == 'key' :
-			# 			key = event['value']
-			# 			time = event['time']
-			# 			if key=='escape':
-			# 				exitSafely()
-			# 			elif key==t1ResponseKeys[0]:
-			# 				trialInitiationResponsesMade[0] = True
-			# 			elif key==t1ResponseKeys[1]:
-			# 				trialInitiationResponsesMade[1] = True
-			# 			elif key==t2ResponseKeys[0]:
-			# 				trialInitiationResponsesMade[2] = True
-			# 			elif key==t2ResponseKeys[1]:
-			# 				trialInitiationResponsesMade[3] = True
-			# 			# print [key,trialInitiationResponsesMade]
-			# 	if all(trialInitiationResponsesMade):
-			# 		trialInitiated = True
-			# 		trialInitiationTime = time - start
-			# print 'trial Initiated'
-			# if doEyelink:
-			# 	gazeTarget = [stimDisplayRes[0]/2.0,stimDisplayRes[1]/2.0]
-			# 	eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion])
-			# 	waitingForGazeTarget = True
-			# 	while waitingForGazeTarget:
-			# 		if not eyelinkChild.qFrom.empty():
-			# 			message = eyelinkChild.qFrom.get()
-			# 			if message=='blink':
-			# 				#deal with blinks here
-			# 				pass
-			# 			elif message[0]=='gazeTargetLost':
-			# 				#deal with unintended saccades here
-			# 				pass
-			# 			elif message[0]=='gazeTargetMet':
-			# 				if (message[1][0]==gazeTarget[0]) and (message[1][1]==gazeTarget[1]): #double check that this isn't an old message
-			# 					waitingForGazeTarget = False #fixation achieved
-			# 		#check for responses while waiting for fixation
-			# 		while not stamperChild.qFrom.empty():
-			# 			event = stamperChild.qFrom.get()
-			# 			if event['type'] == 'key' :
-			# 				key = event['value']
-			# 				time = event['time']
-			# 				if key=='escape':
-			# 					exitSafely()
-			# 				if key=='p': #recalibration requested
-			# 					doCalibration()
-			# 					drawRing()
-			# 					drawDot(fixationSize)
-			# 					stimDisplay.refresh()
-			# 					eyelinkChild.qTo.put(['newGazeTarget',gazeTarget,gazeTargetCriterion]) #calibration sees a window of 2*targetOffset wide, so [targetOffset,targetOffset] is center
-			# 				elif key=='q':
-			# 					waitingForGazeTarget = False
-
-			if doEyelink:
 				eyelinkChild.qTo.put(['reportBlinks',True])
 				eyelinkChild.qTo.put(['reportSaccades',True])
 				eyelinkChild.qTo.put(['sendMessage','trialStart\t'+trialDescrptor])
+			trialInitiationTime = getTime() - start
 
 			#prep and show the fixation twice (ensures 2nd refresh will block; for better trial start time accuracy)
 			for i in range(2):
@@ -794,32 +753,21 @@ if __name__ == '__main__':
 			trialStartTime = getTime() - 1/60.0 #time that the previous (first) refresh returned
 
 			#compute event times
-			cueOnTime = trialStartTime + fixationDuration
-			cueOffTime = cueOnTime + cueDuration
-			cuebackOnTime = cueOnTime + cueCuebackOA			
-			cuebackOffTime = cuebackOnTime + cuebackDuration
-			t2OnTime = cueOnTime + cueTargetOA
-			t1OnTime = t2OnTime - ttoa
-			responseTimeoutTime = t2OnTime + responseTimeout
-
-			#prep the cue screen
-			if cueLocation=='left':
-				drawRing(-targetOffset,1)
-				drawRing(targetOffset)
-				drawRing()
-				gazeTarget = [0,targetOffset]
-			elif cueLocation=='right':
-				drawRing(-targetOffset)
-				drawRing(targetOffset,1)
-				drawRing()
-				gazeTarget = [targetOffset*2,targetOffset]
+			#ttoa , cueLocation , t1Identity , t2Location = trialList.pop()
+			if cueLocation=='NA':
+				t1OnTime = trialStartTime + fixationDuration
+				t2OnTime = t1OnTime + ttoa
+				responseTimeoutTime = t2OnTime + responseTimeout				
 			else:
-				drawRing(-targetOffset)
-				drawRing(targetOffset)
-				drawRing(0,1)
-				gazeTarget = [targetOffset,targetOffset]
-			drawDot(fixationSize)
+				cueOnTime = trialStartTime + fixationDuration
+				cueOffTime = cueOnTime + cueDuration
+				cuebackOnTime = cueOnTime + cueCuebackOA			
+				cuebackOffTime = cuebackOnTime + cuebackDuration
+				t2OnTime = cueOnTime + cueTargetOA #computed even though there might be no t2
+				t1OnTime = t2OnTime - ttoa
+				responseTimeoutTime = t2OnTime + responseTimeout
 
+			#initialize some variables
 			blink = 'FALSE'
 			saccade = 'FALSE'
 			cueOn = False
@@ -841,6 +789,40 @@ if __name__ == '__main__':
 			t2ResponseWhenT2Absent = 'FALSE'
 			feedbackResponse = 'FALSE'
 			recalibration = 'FALSE'
+
+
+			if cueLocation=='NA':
+				cueOn = True
+				cueOff = True
+				cuebackOn = True
+				cuebackOff = True
+				#prep the target screen
+				drawPhotoStim()
+				drawRing(-targetOffset)
+				drawRing(targetOffset)
+				drawRing()
+				drawDot(fixationSize)
+				if t2Location=='left':
+					drawDot(targetSize,-targetOffset)
+				elif t2Location=='right':
+					drawDot(targetSize,targetOffset)
+			else:
+				#prep the cue screen
+				if cueLocation=='left':
+					drawRing(-targetOffset,1)
+					drawRing(targetOffset)
+					drawRing()
+				elif cueLocation=='right':
+					drawRing(-targetOffset)
+					drawRing(targetOffset,1)
+					drawRing()
+				else:
+					drawRing(-targetOffset)
+					drawRing(targetOffset)
+					drawRing()
+				drawDot(fixationSize)
+
+			#start the loop
 			trialDone = False
 			while not trialDone:
 				#manage stimuli
@@ -858,7 +840,7 @@ if __name__ == '__main__':
 						drawDot(fixationSize)
 				elif not cueOff:
 					if getTime()>=cueOffTime:
-						#show the cue-off screen
+						#show the cueOff screen
 						stimDisplay.refresh()
 						cueOff = True
 						if doEyelink:
@@ -875,7 +857,7 @@ if __name__ == '__main__':
 						cuebackOn = True
 						if doEyelink:
 							eyelinkChild.qTo.put(['sendMessage','cuebackOn\t'+trialDescrptor])
-						#prep the cueback-off screen
+						#prep the cuebackOff screen
 						drawRing(-targetOffset)
 						drawRing(targetOffset)
 						drawRing()
