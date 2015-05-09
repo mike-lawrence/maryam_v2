@@ -35,10 +35,26 @@ if __name__ == '__main__':
 	t1ResponseKeys = ['z','a']
 	t2ResponseKeys = [',','.']
 
-	ttoaList = [0.150,0.350,0.800] 
-	cueLocationList = ['left','right','NA'] #NA means no cue
-	t1IdentityList = ['hi','lo','NA'] #NA means no T1
-	t2LocationList = ['left','right'] #NA means no T2
+	t1PracticeDict = dict()
+	t1PracticeDict['ttoaList'] = ['NA']
+	t1PracticeDict['cueLocationList'] = ['left','right','center']
+	t1PracticeDict['t1IdentityList'] = ['hi','lo']
+	t1PracticeDict['t2LocationList'] = ['NA']
+	t1PracticeDict['repetitions'] = 7 #for total of 42 trials
+
+	t2PracticeDict = dict()
+	t2PracticeDict['ttoaList'] = ['NA']
+	t2PracticeDict['cueLocationList'] = ['left','right','center']
+	t2PracticeDict['t1IdentityList'] = ['NA']
+	t2PracticeDict['t2LocationList'] = ['left','right']
+	t2PracticeDict['repetitions'] = 7 #for total of 42 trials
+
+	fullDict = dict()
+	fullDict['ttoaList'] = [0.150,0.350,0.800]
+	fullDict['cueLocationList'] = ['left','right','center'] #NA means no cue
+	fullDict['t1IdentityList'] = ['hi','lo','NA'] 
+	fullDict['t2LocationList'] = ['left','right'] 
+	fullDict['repetitions'] = 1
 
 	fixationDuration = 1.000
 	cueTargetOA = 1.200
@@ -49,8 +65,6 @@ if __name__ == '__main__':
 	feedbackDuration = 1.000
 
 	numberOfBlocks = [5,6]
-	repsPerSoloPractice = 2
-	trialsPerBothPractice = 36
 
 	instructionSizeInDegrees = .5 #specify the size of the instruction text
 	feedbackSizeInDegrees = .5 #specify the size of the feedback text
@@ -550,73 +564,29 @@ if __name__ == '__main__':
 		return subInfo
 
 
-	#define a function that generates a randomized list of trial-by-trial stimulus information representing a factorial combination of the independent variables.
-	def getT1PracticeTrials():
-		trials=[]
-		for rep in range(repsPerSoloPractice):
-			for ttoa in ttoaList:
-				for cueLocation in cueLocationList:
-					for t1Identity in t1IdentityList:
-						if t1Identity!='NA':
-							t2Location = 'NA'
-							trials.append([ttoa,cueLocation,t1Identity,t2Location])
-		random.shuffle(trials)
-		return trials
-
-
-	def getT2PracticeTrials():
-		trials=[]
-		for rep in range(repsPerSoloPractice):
-			for ttoa in ttoaList:
-				for cueLocation in cueLocationList:
-					for t2Location in t2LocationList:
-						if t2Location!='NA':
-							t1Identity = 'NA'
-							trials.append([ttoa,cueLocation,t1Identity,t2Location])
-		random.shuffle(trials)
-		return trials
-
-	def getTrialsForT1Only():
+	def getTrials(inDict):
 		trials = []
-		ttoa = 'NA'
-		cueLocation = 'NA'
-		t2Location = 'NA'
-		for t1Identity in t1IdentityList:
-			trials.append([ttoa,cueLocation,t1Identity,t2Location])
-		random.shuffle(trial)
-		return trials
-
-	def getTrialsForT1withCue():
-		trials = []
-		ttoa = 'NA'
-		t2Location = 'NA'
-		for t1Identity in t1IdentityList:
-			for cueLocation in cueLocationList:
-				trials.append([ttoa,cueLocation,t1Identity,t2Location])
-		random.shuffle(trial)
-		return trials
-
-	def getTrialsForT2withCue():
-		trials = []
-		ttoa = 'NA'
-		t1IdentityList = 'NA'
-		for t2Location in t2LocationList:
-			for cueLocation in cueLocationList:
-				for 
-
-	def getTrials(includeCue=True,includeT1=True,includeT2=True):
-		trials=[]
-		for ttoa in ttoaList:
-			for cueLocation in cueLocationList:
-				for t1Identity in t1IdentityList:
-					for t2Location in t2LocationList:
-						if (t1Identity=='NA') and (t2Location=='NA'):
+		# trialsToPrint = ''
+		for cueLocation in inDict['cueLocationList']:
+			for t1Identity in inDict['t1IdentityList']:
+				for t2Location in inDict['t2LocationList']:
+					for repetition in range(inDict['repetitions']):
+						if ( (t1Identity=='NA') and (t2Location=='NA') ) :
 							pass
-						else:
+						elif ( t1Identity=='NA' ) or (t2Location=='NA'): #ttoa has no meaning 
+							ttoa = 'NA'
+							# if ( cueLocation=='NA' ): #nix no-cue/t1-only and no-cue/t2-only trials
+							# 	pass
+							# else:
 							trials.append([ttoa,cueLocation,t1Identity,t2Location])
+							# trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+						else:
+							for ttoa in inDict['ttoaList']:
+								trials.append([ttoa,cueLocation,t1Identity,t2Location])
+								# trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+		# return [trials,trialsToPrint]
 		random.shuffle(trials)
 		return trials
-
 
 	def checkResponses():
 		responses = []
@@ -675,13 +645,11 @@ if __name__ == '__main__':
 		
 		#get a trial list
 		if block=='t1Practice':
-			trialList = getT1PracticeTrials()
+			trialList = getTrials(t1PracticeDict)
 		elif block=='t2Practice':
-			trialList = getT2PracticeTrials()
-		elif block=='bothPractice':
-			trialList = getTrials()[0:trialsPerBothPractice]
+			trialList = getTrials(t1PracticeDict)
 		else:
-			trialList = getTrials()
+			trialList = getTrials(fullDict)
 		
 		#run the trials
 		trialNum = 0
