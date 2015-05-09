@@ -76,6 +76,7 @@ qTo
 					message['type'] = 'key'
 					message['time'] = event.key.timestamp*timeFreq
 					message['value'] = sdl2.SDL_GetKeyName(event.key.keysym.sym).lower()
+					message['keysym'] = event.key.keysym
 					qFrom.put(message)
 				elif event.type == sdl2.SDL_JOYAXISMOTION:
 					message['type'] = 'axis'
