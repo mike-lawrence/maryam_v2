@@ -249,36 +249,30 @@ qTo
 					print 'received message to exit'
 					exitSafely()
 				elif message[0]=='keycode':
-					print message
-					key = message[1]
-					if key == 'f1':           keycode = pylink.F1_KEY
-					elif key == 'f2':         keycode = pylink.F2_KEY
-					elif key == 'f3':         keycode = pylink.F3_KEY
-					elif key == 'f4':         keycode = pylink.F4_KEY
-					elif key == 'f5':         keycode = pylink.F5_KEY
-					elif key == 'f6':         keycode = pylink.F6_KEY
-					elif key == 'f7':         keycode = pylink.F7_KEY
-					elif key == 'f8':         keycode = pylink.F8_KEY
-					elif key == 'f9':         keycode = pylink.F9_KEY
-					elif key == 'f10':        keycode = pylink.F10_KEY
-					elif key == 'pageup':     keycode = pylink.PAGE_UP
-					elif key == 'pagedown':   keycode = pylink.PAGE_DOWN
-					elif key == 'up':         keycode = pylink.CURS_UP
-					elif key == 'down':       keycode = pylink.CURS_DOWN
-					elif key == 'left':       keycode = pylink.CURS_LEFT
-					elif key == 'right':      keycode = pylink.CURS_RIGHT
-					elif key == 'backspace':  keycode = ord('\b')
-					elif key == 'return':     keycode = pylink.ENTER_KEY
-					elif key == 'escape':     keycode = pylink.ESC_KEY
-					elif key == 'tab':        keycode = ord('\t')
-					elif key == 'space':      keycode = 32
-					elif key == 'return':     keycode = 13
-					elif key == 'c':          keycode = 99
-					elif key == 'v':          keycode = 118
-					elif key == 'escape':     keycode = 27
-					elif key == 'o':          keycode = 111
-					else:                     keycode = 0
-					ky.append(pylink.KeyInput(keycode))
+					keysym = message[1]
+					keycode = keysym.sym
+					if keycode == sdl2.SDLK_F1:           keycode = pylink.F1_KEY
+					elif keycode == sdl2.SDLK_F2:         keycode = pylink.F2_KEY
+					elif keycode == sdl2.SDLK_F3:         keycode = pylink.F3_KEY
+					elif keycode == sdl2.SDLK_F4:         keycode = pylink.F4_KEY
+					elif keycode == sdl2.SDLK_F5:         keycode = pylink.F5_KEY
+					elif keycode == sdl2.SDLK_F6:         keycode = pylink.F6_KEY
+					elif keycode == sdl2.SDLK_F7:         keycode = pylink.F7_KEY
+					elif keycode == sdl2.SDLK_F8:         keycode = pylink.F8_KEY
+					elif keycode == sdl2.SDLK_F9:         keycode = pylink.F9_KEY
+					elif keycode == sdl2.SDLK_F10:        keycode = pylink.F10_KEY
+					elif keycode == sdl2.SDLK_PAGEUP:     keycode = pylink.PAGE_UP
+					elif keycode == sdl2.SDLK_PAGEDOWN:   keycode = pylink.PAGE_DOWN
+					elif keycode == sdl2.SDLK_UP:         keycode = pylink.CURS_UP
+					elif keycode == sdl2.SDLK_DOWN:       keycode = pylink.CURS_DOWN
+					elif keycode == sdl2.SDLK_LEFT:       keycode = pylink.CURS_LEFT
+					elif keycode == sdl2.SDLK_RIGHT:      keycode = pylink.CURS_RIGHT
+					elif keycode == sdl2.SDLK_BACKSPACE:  keycode = ord('\b')
+					elif keycode == sdl2.SDLK_RETURN:     keycode = pylink.ENTER_KEY
+					elif keycode == sdl2.SDLK_ESCAPE:     keycode = pylink.ESC_KEY
+					elif keycode == sdl2.SDLK_TAB:        keycode = ord('\t')
+					elif keycode == pylink.JUNK_KEY:      keycode = 0
+					ky.append(pylink.KeyInput(keycode,keysym.mod))
 			return ky
 
 	customDisplay = EyeLinkCoreGraphicsPySDL2()
