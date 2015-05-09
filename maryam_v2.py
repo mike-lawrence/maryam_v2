@@ -644,7 +644,7 @@ if __name__ == '__main__':
 					if key=='escape':
 						exitSafely()
 					else: #pass keys to eyelink
-						eyelinkChild.qTo.put(['keycode',key])
+						eyelinkChild.qTo.put(['keycode',event['keysym']])
 			if not eyelinkChild.qFrom.empty():
 				message = eyelinkChild.qFrom.get()
 				if message=='calibrationComplete':
