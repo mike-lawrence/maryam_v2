@@ -700,7 +700,7 @@ if __name__ == '__main__':
 									innerDone = True
 									outerDone = False
 								else:
-									eyelinkChild.qTo.put(['keycode',key])
+									eyelinkChild.qTo.put(['keycode',event['keysym']])
 									#print ['main','keycode',key]
 				eyelinkChild.qTo.put(['reportBlinks',True])
 				eyelinkChild.qTo.put(['reportSaccades',True])
