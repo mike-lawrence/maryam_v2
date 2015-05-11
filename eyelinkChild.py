@@ -356,19 +356,19 @@ qTo
 				eyeSample = eyelink.getFloatData()
 				gazeStart = eyeSample.getStartGaze()
 				gazeEnd = eyeSample.getEndGaze()
-				print ['eyelink: saccade',gazeStart,gazeEnd]
+				# print ['eyelink: saccade',gazeStart,gazeEnd]
 				if (gazeStart[0]!=-32768.0) & (gazeEnd[0]!=-32768.0):
 					gazeDistFromGazeTarget = numpy.linalg.norm(numpy.array(gazeEnd)-gazeTarget)
 					if gazeDistFromGazeTarget<1000:
 						if newGazeTarget:
 							if gazeDistFromGazeTarget<gazeTargetCriterion:
-								print ['gazeTargetMet',gazeEnd,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
+								# print ['gazeTargetMet',gazeEnd,gazeTargetCriterion,gazeTarget,gazeDistFromGazeTarget]
 								qFrom.put(['gazeTargetMet',gazeTarget])
 								newGazeTarget = False
 						elif gazeDistFromGazeTarget>gazeTargetCriterion:
 							if reportSaccades:
 								qFrom.put(['gazeTargetLost',gazeTarget])
-								print ['gazeTargetLost',gazeTarget]
+								# print ['gazeTargetLost',gazeTarget]
 							if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 								if doSounds:
 									saccadeSound.play()				
@@ -378,7 +378,7 @@ qTo
 				if (time.time()-lastStartBlinkTime)>.1:
 					if reportBlinks:
 						qFrom.put('blink')
-						print 'eyelink: blink'
+						# print 'eyelink: blink'
 					if (not saccadeSound.stillPlaying()) and (not blinkSound.stillPlaying()):
 						if doSounds:
 							#blinkSound.play()
