@@ -731,19 +731,13 @@ if __name__ == '__main__':
 			trialStartTime = getTime() - 1/60.0 #time that the previous (first) refresh returned
 
 			#compute event times
-			#ttoa , cueLocation , t1Identity , t2Location = trialList.pop()
-			if cueLocation=='NA':
-				t1OnTime = trialStartTime + fixationDuration
-				t2OnTime = t1OnTime + ttoa
-				responseTimeoutTime = t2OnTime + responseTimeout				
-			else:
-				cueOnTime = trialStartTime + fixationDuration
-				cueOffTime = cueOnTime + cueDuration
-				cuebackOnTime = cueOnTime + cueCuebackOA			
-				cuebackOffTime = cuebackOnTime + cuebackDuration
-				t2OnTime = cueOnTime + cueTargetOA #computed even though there might be no t2
-				t1OnTime = t2OnTime - ttoa
-				responseTimeoutTime = t2OnTime + responseTimeout
+			cueOnTime = trialStartTime + fixationDuration
+			cueOffTime = cueOnTime + cueDuration
+			cuebackOnTime = cueOnTime + cueCuebackOA			
+			cuebackOffTime = cuebackOnTime + cuebackDuration
+			t2OnTime = cueOnTime + cueTargetOA #computed even though there might be no t2
+			responseTimeoutTime = t2OnTime + responseTimeout
+			t1OnTime = t2OnTime - ttoa
 
 			#initialize some variables
 			blink = 'FALSE'
@@ -768,37 +762,20 @@ if __name__ == '__main__':
 			feedbackResponse = 'FALSE'
 			recalibration = 'FALSE'
 
-
-			if cueLocation=='NA':
-				cueOn = True
-				cueOff = True
-				cuebackOn = True
-				cuebackOff = True
-				#prep the target screen
-				drawPhotoStim()
+			#prep the cue screen
+			if cueLocation=='left':
+				drawRing(-targetOffset,1)
+				drawRing(targetOffset)
+				drawRing()
+			elif cueLocation=='right':
+				drawRing(-targetOffset)
+				drawRing(targetOffset,1)
+				drawRing()
+			else:
 				drawRing(-targetOffset)
 				drawRing(targetOffset)
 				drawRing()
-				drawDot(fixationSize)
-				if t2Location=='left':
-					drawDot(targetSize,-targetOffset)
-				elif t2Location=='right':
-					drawDot(targetSize,targetOffset)
-			else:
-				#prep the cue screen
-				if cueLocation=='left':
-					drawRing(-targetOffset,1)
-					drawRing(targetOffset)
-					drawRing()
-				elif cueLocation=='right':
-					drawRing(-targetOffset)
-					drawRing(targetOffset,1)
-					drawRing()
-				else:
-					drawRing(-targetOffset)
-					drawRing(targetOffset)
-					drawRing()
-				drawDot(fixationSize)
+			drawDot(fixationSize)
 
 			#start the loop
 			trialDone = False
