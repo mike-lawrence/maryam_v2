@@ -35,26 +35,10 @@ if __name__ == '__main__':
 	t1ResponseKeys = ['z','a']
 	t2ResponseKeys = [',','.']
 
-	t1PracticeDict = dict()
-	t1PracticeDict['ttoaList'] = ['NA']
-	t1PracticeDict['cueLocationList'] = ['left','right','center']
-	t1PracticeDict['t1IdentityList'] = ['hi','lo']
-	t1PracticeDict['t2LocationList'] = ['NA']
-	t1PracticeDict['repetitions'] = 7 #for total of 42 trials
-
-	t2PracticeDict = dict()
-	t2PracticeDict['ttoaList'] = ['NA']
-	t2PracticeDict['cueLocationList'] = ['left','right','center']
-	t2PracticeDict['t1IdentityList'] = ['NA']
-	t2PracticeDict['t2LocationList'] = ['left','right']
-	t2PracticeDict['repetitions'] = 7 #for total of 42 trials
-
-	fullDict = dict()
-	fullDict['ttoaList'] = [0.150,0.350,0.800]
-	fullDict['cueLocationList'] = ['left','right','center'] #NA means no cue
-	fullDict['t1IdentityList'] = ['hi','lo','NA'] 
-	fullDict['t2LocationList'] = ['left','right'] 
-	fullDict['repetitions'] = 1
+	ttoaList = [0.150,0.350,0.800] 
+	cueLocationList = ['left','right','center']
+	t1IdentityList = ['hi','lo','NA'] #NA means no T1 (for cuing-only trials)
+	t2LocationList = ['left','right']
 
 	fixationDuration = 1.000
 	cueTargetOA = 1.200
@@ -65,6 +49,8 @@ if __name__ == '__main__':
 	feedbackDuration = 1.000
 
 	numberOfBlocks = [5,6]
+	repsPerT1Practice = 3
+	repsPerT2Practice = 9
 
 	instructionSizeInDegrees = .5 #specify the size of the instruction text
 	feedbackSizeInDegrees = .5 #specify the size of the feedback text
@@ -563,28 +549,50 @@ if __name__ == '__main__':
 		subInfo = [ sid , order , year , month , day , hour , minute , sex , age , handedness , password ]
 		return subInfo
 
-
-	def getTrials(inDict):
-		trials = []
-		# trialsToPrint = ''
-		for cueLocation in inDict['cueLocationList']:
-			for t1Identity in inDict['t1IdentityList']:
-				for t2Location in inDict['t2LocationList']:
-					for repetition in range(inDict['repetitions']):
-						if ( (t1Identity=='NA') and (t2Location=='NA') ) :
-							pass
-						elif ( t1Identity=='NA' ) or (t2Location=='NA'): #ttoa has no meaning 
-							ttoa = 'NA'
-							# if ( cueLocation=='NA' ): #nix no-cue/t1-only and no-cue/t2-only trials
-							# 	pass
-							# else:
+	def getT1PracticeTrials():
+		trials=[]
+		trialsToPrint = ''
+		for rep in range(repsPerT1Practice):
+			for ttoa in ttoaList:
+				for cueLocation in cueLocationList:
+					for t1Identity in t1IdentityList:
+						if t1Identity!='NA':
+							t2Location = 'NA'
 							trials.append([ttoa,cueLocation,t1Identity,t2Location])
-							# trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
-						else:
-							for ttoa in inDict['ttoaList']:
-								trials.append([ttoa,cueLocation,t1Identity,t2Location])
-								# trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
-		# return [trials,trialsToPrint]
+							trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+		# print trialsToPrint
+		random.shuffle(trials)
+		return trials
+
+	def getT2PracticeTrials():
+		trials=[]
+		ttoa = 'NA'
+		t1Identity = 'NA'
+		trialsToPrint = ''
+		for rep in range(repsPerT2Practice):
+			for cueLocation in cueLocationList:
+				for t2Location in t2LocationList:
+					trials.append([ttoa,cueLocation,t1Identity,t2Location])
+					trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+		# print trialsToPrint
+		random.shuffle(trials)
+		return trials
+
+	def getTrials():
+		trials=[]
+		trialsToPrint = ''
+		for t2Location in t2LocationList:
+			for cueLocation in cueLocationList:
+				for t1Identity in t1IdentityList:
+					# if t1Identity=='NA':
+					# 	ttoa = 'NA'
+					# 	trials.append([ttoa,cueLocation,t1Identity,t2Location])
+					# 	trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+					# else:
+					for ttoa in ttoaList:
+						trials.append([ttoa,cueLocation,t1Identity,t2Location])
+						trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+		# print trialsToPrint
 		random.shuffle(trials)
 		return trials
 
@@ -639,17 +647,19 @@ if __name__ == '__main__':
 	#define a function that runs a block of trials
 	def runBlock(block,messageViewingTime):
 
-		start = getTime()
-		while (getTime()-start)<1:
-			checkResponses() #clears any residual between-block responses
+		if not doEyelink:
+			#clear any residual between-block responses (not necessary if doing eyelink)
+			start = getTime()
+			while (getTime()-start)<1:
+				checkResponses()
 		
 		#get a trial list
 		if block=='t1Practice':
-			trialList = getTrials(t1PracticeDict)
+			trialList = getT1PracticeTrials()
 		elif block=='t2Practice':
-			trialList = getTrials(t1PracticeDict)
+			trialList = getT2PracticeTrials()
 		else:
-			trialList = getTrials(fullDict)
+			trialList = getTrials()
 		
 		#run the trials
 		trialNum = 0
