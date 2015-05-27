@@ -84,6 +84,8 @@ qTo
 		sys.exit() #process gets hung here if called when showing images from eyelink
 
 
+	pylink.setDriftCorrectSounds('off','off','off')
+	pylink.setCalibrationSounds('off','off','off')
 
 	edfPath = './_Data/temp.edf' #temporary default location, to be changed later when ID is established
 	done = False
@@ -112,9 +114,9 @@ qTo
 
 	class EyeLinkCoreGraphicsPySDL2(pylink.EyeLinkCustomDisplay):
 		def __init__(self):
-			self.__target_beep__ = Sound('_Stimuli/type.wav')
-			self.__target_beep__done__ = Sound('qbeep.wav')
-			self.__target_beep__error__ = Sound('error.wav')
+			# self.__target_beep__ = Sound('_Stimuli/type.wav')
+			# self.__target_beep__done__ = Sound('qbeep.wav')
+			# self.__target_beep__error__ = Sound('error.wav')
 			if sys.byteorder == 'little':
 				self.byteorder = 1
 			else:
@@ -125,12 +127,13 @@ qTo
 		def record_abort_hide(self):
 			pass
 		def play_beep(self,beepid):
-			if beepid == pylink.DC_TARG_BEEP or beepid == pylink.CAL_TARG_BEEP:
-				self.__target_beep__.play()
-			elif beepid == pylink.CAL_ERR_BEEP or beepid == pylink.DC_ERR_BEEP:
-				self.__target_beep__error__.play()
-			else:#	CAL_GOOD_BEEP or DC_GOOD_BEEP
-				self.__target_beep__done__.play()
+			pass
+			# if beepid == pylink.DC_TARG_BEEP or beepid == pylink.CAL_TARG_BEEP:
+			# 	self.__target_beep__.play()
+			# elif beepid == pylink.CAL_ERR_BEEP or beepid == pylink.DC_ERR_BEEP:
+			# 	self.__target_beep__error__.play()
+			# else:#	CAL_GOOD_BEEP or DC_GOOD_BEEP
+			# 	self.__target_beep__done__.play()
 		def clear_cal_display(self):
 			# print 'clear_cal_display'
 			qFrom.put('clear_cal_display')
@@ -245,10 +248,11 @@ qTo
 			ky=[]
 			while not qTo.empty():
 				message = qTo.get()
-				if message=='quit':
-					print 'received message to exit'
-					exitSafely()
-				elif message[0]=='keycode':
+				# if message=='quit':
+				# 	print 'received message to exit'
+				# 	exitSafely()
+				# el
+				if message[0]=='keycode':
 					keysym = message[1]
 					keycode = keysym.sym
 					if keycode == sdl2.SDLK_F1:           keycode = pylink.F1_KEY
@@ -331,6 +335,7 @@ qTo
 				if eyelink.isRecording()==0:
 					eyelink.stopRecording()
 				eyelink.doTrackerSetup()
+				print 'calComplete'
 				qFrom.put('calibrationComplete')
 		if eyelink.isRecording()==0: #stupid, I know, but eyelink.isRecording() returns 0 if it *is* indeed recording!
 			eyeData = eyelink.getNextData()

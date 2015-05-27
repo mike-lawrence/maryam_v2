@@ -3,7 +3,7 @@ if __name__ == '__main__':
 	#Important parameters
 	########
 
-	viewingDistance = 100.0 #units can be anything so long as they match those used in stimDisplayWidth below
+	viewingDistance = 58.0 #units can be anything so long as they match those used in stimDisplayWidth below
 	stimDisplayWidth = 51.6 #units can be anything so long as they match those used in viewingDistance above
 	stimDisplayRes = (1920,1200) #pixel resolution of the stimDisplay
 	stimDisplayPosition = (1024,0)
@@ -35,29 +35,29 @@ if __name__ == '__main__':
 	t1ResponseKeys = ['z','a']
 	t2ResponseKeys = [',','.']
 
-	ttoaList = [0.150,0.350,0.800] 
+	ttoaList = [0.200,0.400,0.800] 
 	cueLocationList = ['left','right','center']
 	t1IdentityList = ['hi','lo','NA'] #NA means no T1 (for cuing-only trials)
 	t2LocationList = ['left','right']
 
-	fixationDuration = 1.000
+	fixationDuration = .500
 	cueTargetOA = 1.200
 	cueDuration = 0.050
 	cueCuebackOA = 0.200
 	cuebackDuration = 0.050
-	responseTimeout = 2.000
-	feedbackDuration = 1.000
+	responseTimeout = 1.500
+	feedbackDuration = .500
 
-	numberOfBlocks = [5,6]
+	numberOfBlocks = [4,5]
 	repsPerT1Practice = 3
-	repsPerT2Practice = 9
+	repsPerT2Practice = 3
 
 	instructionSizeInDegrees = .5 #specify the size of the instruction text
 	feedbackSizeInDegrees = .5 #specify the size of the feedback text
-	fixationSizeInDegrees = .1
-	targetSizeInDegrees = 1 #specify the width of the target
-	targetOffsetInDegrees = 8 #specify the distance of the target to center
-	placeholderSizeInDegrees = 2
+	fixationRadiusInDegrees = .1
+	targetRadiusInDegrees = .5 #specify the width of the target
+	targetOffsetInDegrees = 6 #specify the distance of the target to center
+	placeholderRadiusInDegrees = 1
 	placeholderThicknessProportion = .8
 
 	textWidth = .9 #proportion of the stimDisplay to use when drawing instructions
@@ -145,11 +145,11 @@ if __name__ == '__main__':
 	calibrationDotSize = calibrationDotSizeInDegrees*PPD
 	instructionSize = instructionSizeInDegrees*PPD
 	feedbackSize = feedbackSizeInDegrees*PPD
-	fixationSize = fixationSizeInDegrees*PPD
-	targetSize = targetSizeInDegrees*PPD
+	fixationRadius = fixationRadiusInDegrees*PPD
+	targetRadius = targetRadiusInDegrees*PPD
 	targetOffset = targetOffsetInDegrees*PPD
-	placeholderSize = placeholderSizeInDegrees*PPD
-	placeholderThickness = placeholderSizeInDegrees*PPD*placeholderThicknessProportion
+	placeholderRadius = placeholderRadiusInDegrees*PPD
+	placeholderThickness = placeholderRadiusInDegrees*PPD*placeholderThicknessProportion
 	gazeTargetCriterion = gazeTargetCriterionInDegrees*PPD
 
 	########
@@ -396,7 +396,7 @@ if __name__ == '__main__':
 
 
 	def drawRing(xOffset=0,color=.5):
-		outer = placeholderSize
+		outer = placeholderRadius
 		inner = placeholderThickness
 		gl.glColor3f(color,color,color)
 		gl.glBegin(gl.GL_QUAD_STRIP)
@@ -539,25 +539,22 @@ if __name__ == '__main__':
 			sex = getInput('Sex (m or f): ')
 			age = getInput('Age (2-digit number): ')
 			handedness = getInput('Handedness (r or l): ')
-			password = getInput('Please enter a password (ex. B00): ')
 		else:
 			sex = 'test'
 			age = 'test'
 			handedness = 'test'
-			password = 'test'
-		password = hashlib.sha512(password).hexdigest()
-		subInfo = [ sid , order , year , month , day , hour , minute , sex , age , handedness , password ]
+		subInfo = [ sid , order , year , month , day , hour , minute , sex , age , handedness ]
 		return subInfo
 
 	def getT1PracticeTrials():
 		trials=[]
+		t2Location = 'NA'
 		trialsToPrint = ''
 		for rep in range(repsPerT1Practice):
 			for ttoa in ttoaList:
 				for cueLocation in cueLocationList:
 					for t1Identity in t1IdentityList:
 						if t1Identity!='NA':
-							t2Location = 'NA'
 							trials.append([ttoa,cueLocation,t1Identity,t2Location])
 							trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
 		# print trialsToPrint
@@ -566,14 +563,14 @@ if __name__ == '__main__':
 
 	def getT2PracticeTrials():
 		trials=[]
-		ttoa = 'NA'
 		t1Identity = 'NA'
 		trialsToPrint = ''
 		for rep in range(repsPerT2Practice):
 			for cueLocation in cueLocationList:
 				for t2Location in t2LocationList:
-					trials.append([ttoa,cueLocation,t1Identity,t2Location])
-					trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
+					for ttoa in ttoaList:
+						trials.append([ttoa,cueLocation,t1Identity,t2Location])
+						trialsToPrint += '\t'.join(map(str,trials[-1]))+'\n'
 		# print trialsToPrint
 		random.shuffle(trials)
 		return trials
@@ -610,7 +607,7 @@ if __name__ == '__main__':
 
 
 	def doCalibration():
-		drawDot(fixationSize)
+		drawDot(fixationRadius)
 		stimDisplay.refresh()
 		eyelinkChild.qTo.put('doCalibration')
 		calibrationDone = False
@@ -618,17 +615,18 @@ if __name__ == '__main__':
 			if not stamperChild.qFrom.empty():
 				event = stamperChild.qFrom.get()
 				if event['type'] == 'key' :
-					key = event['value']
-					if key=='escape':
-						exitSafely()
-					else: #pass keys to eyelink
-						eyelinkChild.qTo.put(['keycode',event['keysym']])
+					# key = event['value']
+					# if key=='escape':
+					# 	exitSafely()
+					# else: #pass keys to eyelink
+					eyelinkChild.qTo.put(['keycode',event['keysym']])
 			if not eyelinkChild.qFrom.empty():
 				message = eyelinkChild.qFrom.get()
+				print message
 				if message=='calibrationComplete':
 					calibrationDone = True
 				elif (message=='setup_cal_display') or (message=='exit_cal_display'):
-					drawDot(fixationSize)
+					drawDot(fixationRadius)
 					stimDisplay.refresh()
 				elif message=='erase_cal_target':
 					pass
@@ -703,15 +701,8 @@ if __name__ == '__main__':
 							if event['type'] == 'key' :
 								key = event['value']
 								time = event['time']
-								if key=='escape':
-									exitSafely()
-								elif key=='p': #recalibration requested
-									doCalibration()
-									innerDone = True
-									outerDone = False
-								else:
-									eyelinkChild.qTo.put(['keycode',event['keysym']])
-									#print ['main','keycode',key]
+								eyelinkChild.qTo.put(['keycode',event['keysym']])
+								#print ['main','keycode',key]
 				eyelinkChild.qTo.put(['reportBlinks',True])
 				eyelinkChild.qTo.put(['reportSaccades',True])
 				eyelinkChild.qTo.put(['sendMessage','trialStart\t'+trialDescrptor])
@@ -722,7 +713,7 @@ if __name__ == '__main__':
 				drawRing(-targetOffset)
 				drawRing(targetOffset)
 				drawRing()
-				drawDot(fixationSize)
+				drawDot(fixationRadius)
 				if i==0: #only draw on the first frame
 					drawPhotoStim()
 				stimDisplay.refresh()
@@ -774,8 +765,8 @@ if __name__ == '__main__':
 			else:
 				drawRing(-targetOffset)
 				drawRing(targetOffset)
-				drawRing()
-			drawDot(fixationSize)
+				drawRing(0,1)
+			drawDot(fixationRadius)
 
 			#start the loop
 			trialDone = False
@@ -792,7 +783,7 @@ if __name__ == '__main__':
 						drawRing(-targetOffset)
 						drawRing(targetOffset)
 						drawRing()
-						drawDot(fixationSize)
+						drawDot(fixationRadius)
 				elif not cueOff:
 					if getTime()>=cueOffTime:
 						#show the cueOff screen
@@ -804,7 +795,7 @@ if __name__ == '__main__':
 						drawRing(-targetOffset)
 						drawRing(targetOffset)
 						drawRing(0,1)
-						drawDot(fixationSize)
+						drawDot(fixationRadius)
 				elif not cuebackOn:
 					if getTime()>=cuebackOnTime:
 						#show the cueback screen
@@ -816,7 +807,7 @@ if __name__ == '__main__':
 						drawRing(-targetOffset)
 						drawRing(targetOffset)
 						drawRing()
-						drawDot(fixationSize)
+						drawDot(fixationRadius)
 				elif not cuebackOff:
 					if getTime()>=cuebackOffTime:
 						#show the cueback-off screen
@@ -829,11 +820,11 @@ if __name__ == '__main__':
 						drawRing(-targetOffset)
 						drawRing(targetOffset)
 						drawRing()
-						drawDot(fixationSize)
+						drawDot(fixationRadius)
 						if t2Location=='left':
-							drawDot(targetSize,-targetOffset)
+							drawDot(targetRadius,-targetOffset)
 						elif t2Location=='right':
-							drawDot(targetSize,targetOffset)
+							drawDot(targetRadius,targetOffset)
 				elif not t1On:
 					if getTime()>=t1OnTime:
 						t1On = True
@@ -951,6 +942,9 @@ if __name__ == '__main__':
 				eyelinkChild.qTo.put(['reportSaccades',False])
 			#show feedback
 			gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+			drawRing(-targetOffset)
+			drawRing(targetOffset)
+			drawRing()
 			drawFeedback(feedbackText)
 			stimDisplay.refresh()
 			feedbackDone = False
@@ -973,14 +967,15 @@ if __name__ == '__main__':
 							else: #haven't done a recalibration
 								feedbackResponse = 'TRUE'
 								#update feedback
+								drawRing(-targetOffset)
+								drawRing(targetOffset)
+								drawRing()
 								drawFeedback("Don't respond during feedback!")
 								stimDisplay.refresh()
 								feedbackDoneTime = getTime() + feedbackDuration
 			#write out trial info
 			dataToWrite = '\t'.join(map(str,[ subInfoForFile , messageViewingTime , block , trialNum , trialInitiationTime , ttoa , cueLocation , t1Identity , t2Location , badKey , t1Response , t1RT , tooManyT1 , t1TooSoon , t1ResponseWhenT1Absent , t2Response , t2RT , tooManyT2 , t2TooSoon , t2ResponseWhenT2Absent , feedbackResponse , recalibration , blink , saccade]))
 			writerChild.qTo.put(['write','data',dataToWrite])
-			if (trialNum==27)&(len(trialList)>27):
-				messageViewingTime = showMessage('Take a break!\n\nWhen you are ready to continue the experiment, press any key.')
 		print 'on break'
 
 
@@ -994,16 +989,14 @@ if __name__ == '__main__':
 
 	#get subject info
 	subInfo = getSubInfo()
-	password = subInfo[-1]
 	order = subInfo[1]
-	subInfo = subInfo[0:(len(subInfo)-1)]
 
 	if not os.path.exists('_Data'):
 		os.mkdir('_Data')
 	if subInfo[0]=='test':
 		filebase = 'test'
 	else:
-		filebase = '_'.join(subInfo[0:6])
+		filebase = '_'.join(subInfo[0:7])
 	if not os.path.exists('_Data/'+filebase):
 		os.mkdir('_Data/'+filebase)
 
@@ -1013,7 +1006,6 @@ if __name__ == '__main__':
 		eyelinkChild.qTo.put(['edfPath','_Data/'+filebase+'/'+filebase+'_eyelink.edf'])
 
 	writerChild.qTo.put(['newFile','data','_Data/'+filebase+'/'+filebase+'_data.txt'])
-	writerChild.qTo.put(['write','data',password])
 	header ='\t'.join(['id' , 'order' , 'year' , 'month' , 'day' , 'hour' , 'minute' , 'sex' , 'age'  , 'handedness' , 'messageViewingTime' , 'block' , 'trialNum' , 'trialInitiationTime', 'ttoa' , 'cueLocation' , 't1Identity' , 't2Location' , 'badKey' , 't1Response' , 't1RT' , 'tooManyT1' , 't1TooSoon' , 't1ResponseWhenT1Absent' , 't2Response' , 't2RT' , 'tooManyT2' , 't2TooSoon' , 't2ResponseWhenT2Absent' , 'feedbackResponse' , 'recalibration' , 'blink' , 'saccade' ])
 	writerChild.qTo.put(['write','data',header])
 
@@ -1029,11 +1021,11 @@ if __name__ == '__main__':
 
 	showMessage('Throughout the experiment, grey rings will appear at the center, left and right sides of the screen. Sometimes one of these rings will flash white briefly, but which ring gets flashed is completely random. The flash can sometimes grab your attention but please try to keep your eyes looking at the grey dot at the center of the screen.\n\nTo continue to the next page of instructions, press any key.')
 
-	t1PracticeMessage = 'During this part of the experiment you will be staring at the grey dot and listening for tones that will sound. When you hear a low tone, press the "'+t1ResponseKeys[0]+'" key.\nWhen you hear a high tone, press the "'+t1ResponseKeys[1]+'" key.\n\nAfter you respond, you will see a number that tells you how quickly you responded; faster responses yield lower numbers. If you pressed the wrong key (for example, if the tone was high and you pressed the low key), then the number will have an "x" on either side. Try to respond as quickly as you can without making too many errors.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
+	t1PracticeMessage = 'During this part of the experiment you will be staring at the grey dot and listening for tones that will sound. When you hear a low tone, press the "z" key.\nWhen you hear a high tone, press the "a" key.\n\nAfter you respond, you will see a number that tells you how quickly you responded; faster responses yield lower numbers. If you pressed the wrong key (for example, if the tone was high and you pressed the low key), then the number will have an "x" on either side. Try to respond as quickly as you can without making too many errors.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
 
-	t2PracticeMessage = 'During this part of the experiment you will be staring at the grey dot and watching for dots that will appear. When a dot appears on the left, press the "'+t2ResponseKeys[0]+'" key.\nWhen a dot appears on the right, press the "'+t2ResponseKeys[1]+'" key.\n\nAfter you respond, you will see a number that tells you how quickly you responded; faster responses yield lower numbers. If you pressed the wrong key (for example, if the dot was on the right and you pressed the left key), then the number will have an "x" on either side. Try to respond as quickly as you can without making too many errors.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
+	t2PracticeMessage = 'During this part of the experiment you will be staring at the grey dot and watching for dots that will appear. When a dot appears on the left, press the "<" key.\nWhen a dot appears on the right, press the ">" key.\n\nAfter you respond, you will see a number that tells you how quickly you responded; faster responses yield lower numbers. If you pressed the wrong key (for example, if the dot was on the right and you pressed the left key), then the number will have an "x" on either side. Try to respond as quickly as you can without making too many errors.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
 
-	bothPracticeMessage1 = 'During this part of the experiment you will be staring at the grey dot and listening for tones that will sound and also watching for dots that will appear. When you hear a low tone, press the "'+t1ResponseKeys[0]+'" key.\nWhen you hear a high tone, press the "'+t1ResponseKeys[1]+'" key.\n\nWhen a dot appears on the left, press the "'+t2ResponseKeys[0]+'" key.\nWhen a dot appears on the right, press the "'+t2ResponseKeys[1]+'" key.\n\nTo continue to the next page of instructions, press any key.'
+	bothPracticeMessage1 = 'During this part of the experiment you will be staring at the grey dot and listening for tones that will sound and also watching for dots that will appear. When you hear a low tone, press the "z" key.\nWhen you hear a high tone, press the "a" key.\n\nWhen a dot appears on the left, press the "<" key.\nWhen a dot appears on the right, press the ">" key.\n\nTo continue to the next page of instructions, press any key.'
 	
 	bothPracticeMessage2 = 'You will receive feedback as before, this time with two numbers reflecting how quickly and accurately you responded to each target type (tone and dot), with the tone-related number appearing slightly above the dot-related number. Try to respond quickly to both target types without making too many errors on either target type.\n\nWhen the numbers appear you can blink if you need to but when the grey dot reappears try to keep your eyes focused at the center of the screen.\n\nWhen you are ready to begin practice, press any key.'
 
